@@ -1,26 +1,19 @@
 "use client"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 import { useEffect, useState } from "react"
 import { useSelector } from "react-redux"
-import Loading from "@/app/components/Loading"
-import axios from "@/app/utilities/axios"
-import * as stripeService from "@/app/services/stripe"
+import Loading from "./Loading"
+import axios from "../../utilities/axios"
+import moment from "moment"
+import * as serviceApis from "../../services/report"
+import * as companyApis from  "../../apis/company"
 
 export default function Auth(props) {
   const userState = useSelector(state => state.user)
   const router = useRouter()
+  const pathname = usePathname()
   const [loading, setLoading] = useState(true)
-
-  const getBillingPortal = async () => {
-    try {
-      const response = await stripeService.getBillingPortal(userState.token)
-      if (!response.status) throw new Error(response.message)
-
-      router.replace(response.url)
-    } catch (error) {
-      router.replace("/login")
-    }
-  }
+  const [company, setCompany] = useState(null)
 
   const validateSession = async () => {
     try {
@@ -31,24 +24,47 @@ export default function Auth(props) {
 
       setLoading(false)
     } catch (error) {
-      router.replace("/login")
+      router.replace("/auth/signin")
     }
   }
 
-  useEffect(() => {
-    if (!userState.user) return router.replace("/login")
-    if (userState.companyUser) {
-      if (!userState.user.company) return router.replace("/login")
+  const getStripePostal = async () => {
+    try {
+      const response = await serviceApis.stripePortal(userState.token)
+      if (!response.status) throw new Error(response.message)
 
-      const hasSubscription = userState.user.company.subscription_id
-      const isUnpaid = userState.user.company.payment_status !== "paid"
-
-      if (hasSubscription && isUnpaid) getBillingPortal()
-      if (!hasSubscription && isUnpaid) return router.replace("/payment")
+      window.location.href = response.url
+    } catch (error) {
+      alert(error.message)
     }
+  }
+
+  const getCompany = async () => {
+    try {
+      const response = await companyApis.getCompany(userState.token, userState.user.company_id)
+      if (!response.status) throw new Error(response.message)
+
+      setCompany(response.company)
+    } catch (error) {
+      alert(error.message)
+    }
+  }
+  
+  useEffect(() => {
+    if (userState.user?.type === "pending") router.replace("/auth/onbaord")
+    if (userState.companyUser) getCompany()
+  }, [])
+
+  useEffect(() => {
+    if (!userState.user) return router.replace("/auth/signin")
+    else if (company && company.payment_status === "paid" && company.subscription_id && company.end_date < moment().format("YYYY-MM-DD")) return getStripePostal()
 
     validateSession()
-  }, [])
+
+    if (userState.warehouseUser && pathname.startsWith("/sp")) router.replace("/wp/d")
+    if (company && company.status === "onboard" && !company.subscription_id && pathname.startsWith("/wp")) router.replace("/sp/d")
+    if (company && company.status !== "onboard" && company.subscription_id && pathname.startsWith("/sp")) router.replace("/wp/d")
+  }, [company])
 
   if (loading)
     return (

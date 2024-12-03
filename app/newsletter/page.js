@@ -2,7 +2,7 @@
 import { useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Container, Grid, Button, TextField, Typography } from "@mui/material"
-import * as newsletterApis from "@/app/apis/newsletter"
+import * as newsletterApis from "@/apis/newsletter"
 import Alert from "@/app/components/Alert"
 
 export default function newsletter() {

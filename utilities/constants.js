@@ -1,0 +1,90 @@
+import moment from "moment"
+import Chip from "@mui/material/Chip"
+
+export const maximumImageSize = 4_096_000
+export const imageExtensions = ["image/jpeg", "image/jpg", "image/png"]
+
+export const userTypes = {
+  pending: "pending",
+  customer: "customer",
+  seller: "seller",
+  warehouse: "warehouse",
+}
+
+export const redirectUrls = {
+  awaiting_onboard: "/auth/onboard",
+  customer: "/cp/d/orders/awaiting-shipment",
+  awaiting_warehouse: "/wp/terms",
+  awaiting_seller: "/sp/terms",
+  awaiting_warehouse_terms: "/wp/onboard",
+  awaiting_seller_terms: "/sp/d",
+  company: "/wp/d",
+  warehouse: "/wp/d",
+}
+
+export const returnStatus = {
+  "received": <Chip label="RECEIVED" />,
+  "ship requested": <Chip label="SHIP REQUESTED" color="warning" />,
+  "shipped": <Chip label="SHIPPED" color="success" />,
+  "delivered": <Chip label="DELIVERED" color="success" />,
+  // "open": <Chip label="OPEN" />,
+  // "awaiting shipment": <Chip label="AWAITING SHIPMENT" color="warning" />,
+  // "declined": <Chip label="DECLINED" color="error" />,
+}
+
+export const returnType = {
+  "refund": <Chip label="REFUND" color="warning" />,
+  "exchange": <Chip label="EXCHANGE" color="info" />
+}
+
+export const returnServiceStatus = {
+  "requested": <Chip label="REQUESTED" color="warning" />,
+  "completed": <Chip label="COMPLETED" color="success" />,
+}
+
+export const feedbackStatus = {
+  Opened: <Chip label="OPENED" />,
+  Closed: <Chip label="CLOSED" color="success" />,
+  Voided: <Chip label="VOIDED" color="error" />,
+}
+
+export const fbaStatus = {
+  "pending": <Chip label="PENDING" />,
+  "received": <Chip label="IN PROGRESS" color="warning" />,
+  "shipped": <Chip label="SHIPPED" color="success" />,
+}
+
+export const paymentStatus = {
+  "paid": <Chip label="PAID" color="success" />,
+  "unpaid": <Chip label="UNPAID" color="error" />,
+  "refunded": <Chip label="REFUNDED" color="info" />
+}
+
+export const orderStatus = {
+  "received": <Chip label="RECEIVED" />,
+  "shipped": <Chip label="SHIPPED" color="success" />,
+  "cancelled": <Chip label="CANCELLED" color="error" />,
+  "refunded": <Chip label="REFUNDED" color="warning" />,
+}
+
+export const invoiceStatus = {
+  "awaiting payment": <Chip label="AWAITING PAYMENT" color="error" />,
+  "partial paid": <Chip label="PARTIAL PAID" color="warning" />,
+  "paid": <Chip label="PAID" color="success" />,
+}
+
+export const getCompanyStatus = (status, endDate) => {
+  const currentDate = new Date()
+  const formattedEndDate = new Date(endDate)
+
+  if (status === "paid") return "green"
+  if (status === "unpaid" && formattedEndDate >= currentDate) return "#FFCC00"
+  if (status === "unpaid" && formattedEndDate < currentDate) return "red"
+}
+
+export const getFormattedDate = (date) => moment(date).format("Do MMM")
+export const getFormattedDatetime = (date) => moment(date).format("DD-MM-YYYY HH:mm")
+export const superUser = (role = "") => role === "super admin"
+export const warehouseUser = (role = "") => role.indexOf("warehouse") !== -1
+export const companyUser = (role = "") => role.indexOf("company") !== -1
+export const customer = (role = "") => role === "customer"

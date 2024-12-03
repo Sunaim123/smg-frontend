@@ -3,17 +3,17 @@ import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
 import { useDispatch, useSelector } from "react-redux"
-import { AppBar, Avatar, Badge, Box, Button, Container, Divider, Grid, IconButton, Menu, MenuItem, Toolbar, Tooltip, Typography } from "@mui/material"
+import { AppBar, Avatar, Badge, Box, Button, Container, IconButton, Menu, MenuItem, Toolbar, Tooltip, Typography } from "@mui/material"
 import * as Icon from "@mui/icons-material"
 
 import CircularProgress from "@mui/material/CircularProgress"
-import Alert from "@/app/components/Alert"
-import brand from "@/public/smg-light-rounded.png"
-import * as userSlice from "@/app/store/user"
-import * as companyApis from "@/app/apis/company"
-import axios from "@/app/utilities/axios"
+import Alert from "./Alert"
+import brand from "../../public/smg-light-rounded.png"
+import * as userSlice from "../../store/user"
+import * as companyApis from "../../apis/company"
+import axios from "../../utilities/axios"
 import TermsAndConditions from "./TermsAndConditions"
-import { emptyCart } from "@/app/store/cart"
+import { emptyCart } from "../../store/cart"
 
 export default function Navbar() {
   const userState = useSelector((state) => state.user)
@@ -79,9 +79,10 @@ export default function Navbar() {
 
       dispatch(emptyCart())
       dispatch(userSlice.logout())
-      router.replace("/login")
+      router.replace("/auth/signin")
     }
-    else router.replace(`/${item.toLowerCase()}`)
+    else if (item === "Document Number") router.replace("/wp/document_numbers")
+    else router.replace(`/wp/${item.toLowerCase()}`)
   }
 
   const handleOpenNavMenu = (e) => {
@@ -106,26 +107,17 @@ export default function Navbar() {
   }
 
   const pages = [
-    { key: "dashboard", title: "Dashboard", link: "/dashboard", icon: <Icon.HomeOutlined /> },
-    { key: "returns", title: "Returns", link: userState.warehouseUser ? "/returns?status=Received" : "/returns?status=Opened", icon: <Icon.WarehouseOutlined /> },
-    { key: "fbas", title: "FBA Shipments", link: "/fbas?status=Pending", icon: <Icon.LocalShippingOutlined /> },
-    { key: "products", title: "Inventory", link: "/products", icon: <Icon.Inventory2Outlined /> },
-    { key: "orders", title: "Orders", link: "/products/orders", icon: <Icon.CategoryOutlined /> }
-  ]
-
-  const account = [
-    "Profile",
-    userState.companyUser && "Company",
-  ].filter(Boolean)
-
-  const user = [
-    "Users",
-    "Roles",
-    userState.permissions && userState.permissions["UPDATE_ROLE"] && "Permissions",
+    !userState.customer && { key: "dashboard", title: "Dashboard", link: "/wp/d", icon: <Icon.HomeOutlined /> },
+    !userState.customer && { key: "returns", title: "Returns", link: "/wp/returns?status=Received", icon: <Icon.WarehouseOutlined /> },
+    !userState.customer && { key: "fbas", title: "FBA Shipments", link: "/wp/fbas?status=Pending", icon: <Icon.LocalShippingOutlined /> },
+    { key: "products", title: userState.customer ? "Products" : "Inventory", link: "/products", icon: <Icon.Inventory2Outlined /> },
+    { key: "orders", title: userState.customer ? "Orders" : "Inventory Orders", link: userState.customer ? "/cp/orders" : "/wp/inventory-orders", icon: <Icon.CategoryOutlined /> }
   ].filter(Boolean)
 
   const settings = [
-    "Feedbacks",
+    !userState.customer && "Users",
+    !userState.customer && "Supports",
+    userState.companyUser && "Document Number",
     userState.companyUser && "Settings",
     "Logout"
   ].filter(Boolean)
@@ -156,7 +148,7 @@ export default function Navbar() {
               textDecoration: "none",
             }}
           >
-            <Image src={brand} alt="brand" width={40} height={40} />
+            <Image src={brand} alt="brand" width={48} height={48} />
           </Typography>
           <Box sx={{ flexGrow: 1, display: { xs: "flex", md: "none" } }}>
             <IconButton
@@ -189,7 +181,7 @@ export default function Navbar() {
             >
               {pages.map((page) => (
                 <MenuItem key={page.key} onClick={() => handleLink(page.link)}>
-                  <Typography textAlign="center">{page.title}</Typography>
+                  <Typography textAlign="center">{page.icon} {page.title}</Typography>
                 </MenuItem>
               ))}
             </Menu>
@@ -211,7 +203,7 @@ export default function Navbar() {
               textDecoration: "none",
             }}
           >
-            <Image src={brand} alt="brand" width={40} height={40} />
+            SMG
           </Typography>
 
           <Box sx={{ flexGrow: 1, display: { xs: "none", md: "flex" } }}>
@@ -221,17 +213,17 @@ export default function Navbar() {
                 onClick={() => handleLink(page.link)}
                 sx={{ my: 2, color: "white", display: "flex", alignItems: "center", gap: 1 }}
               >
-                {page.title}
+                {page.icon} {page.title}
               </Button>
             ))}
 
             {userState.warehouseUser && userState.permissions && userState.permissions["READ_INVOICES"] &&
               <Button
                 key="invoices"
-                onClick={() => handleLink("/invoices")}
+                onClick={() => handleLink("/wp/invoices")}
                 sx={{ my: 2, color: "white", display: "flex", alignItems: "center", gap: 1 }}
               >
-                Invoices
+                <Icon.ReceiptOutlined /> &nbsp; Invoices
               </Button>}
 
             {userState.warehouseUser && userState.permissions && userState.permissions["READ_PAYMENT_LOGS"] && (
@@ -239,7 +231,7 @@ export default function Navbar() {
                 onClick={handleClick}
                 sx={{ my: 2, alignItems: "center" }}
               >
-                Reports
+                <Icon.AssessmentOutlined /> &nbsp; Reports
               </Button>)}
             <Menu
               id="fade-menu"
@@ -250,29 +242,29 @@ export default function Navbar() {
               open={open}
               onClose={handleClose}
             >
-              <MenuItem onClick={() => handleLink("/reports/payment-logs")}>Logs</MenuItem>
-              <MenuItem onClick={() => handleLink("/reports/income-statement")}>Income Statement</MenuItem>
+              <MenuItem onClick={() => handleLink("/wp/reports/payment-logs")}>Logs</MenuItem>
+              <MenuItem onClick={() => handleLink("/wp/reports/income-statement")}>Income Statement</MenuItem>
             </Menu>
           </Box>
 
           <Box display="flex" alignItems="center" gap={1}>
             {userState.companyUser && company?.status !== "onboard" &&
               <Button onClick={() => setTermsModal(true)}>
-                {loading ? <CircularProgress color="inherit" size={20} /> : <Icon.StorefrontOutlined />} &nbsp; Sell
+                {loading ? <CircularProgress color="inherit" size={20} /> : <Icon.SellOutlined />} &nbsp; Become a seller
               </Button>}
             {userState.companyUser && company?.status === "onboard" &&
-              <Button onClick={() => router.push("/seller/dashboard")}>
-                Seller
+              <Button onClick={() => router.push("/sp/d")} startIcon={<Icon.StorefrontOutlined />}>
+                Seller Portal
               </Button>}
 
             {!userState.warehouseUser &&
               <Button
                 key="cart"
-                onClick={() => handleLink("/cart")}
+                onClick={() => handleLink("/wp/cart")}
                 sx={{ my: 2, color: "white", display: "flex", alignItems: "center", gap: 1 }}
               >
                 <Icon.ShoppingCartOutlined />
-                {cart.length > 0 && <Badge>{cart.length}</Badge>}
+                {cart.length > 0 && <Badge> {cart.length} </Badge>}
               </Button>}
 
             <Box sx={{ flexGrow: 0 }}>
@@ -297,37 +289,11 @@ export default function Navbar() {
                 open={Boolean(anchorElUser)}
                 onClose={handleCloseUserMenu}
               >
-                <Box sx={{ minWidth: "200px", textAlign: "center" }}>
-                  {account.map((item, index) => (
-                    <MenuItem key={index} onClick={() => handleMenuClick(item)}>
-                      {item}
-                    </MenuItem>
-                  ))}
-                  <Divider />
-                  {/* {userState.companyUser && company?.status === "onboard" && <>
-                    <MenuItem onClick={() => handleMenuClick("Listings")}>
-                      Listings
-                    </MenuItem>
-                    <MenuItem onClick={() => handleMenuClick("Listings/orders")}>
-                      My Orders
-                    </MenuItem>
-                    <MenuItem onClick={() => handleMenuClick("payouts")}>
-                      Payouts
-                    </MenuItem>
-                    <Divider />
-                  </>} */}
-                  {user.map((item, index) => (
-                    <MenuItem key={index} onClick={() => handleMenuClick(item)}>
-                      {item}
-                    </MenuItem>
-                  ))}
-                  <Divider />
-                  {settings.map((item, index) => (
-                    <MenuItem key={index} onClick={() => handleMenuClick(item)}>
-                      {item}
-                    </MenuItem>
-                  ))}
-                </Box>
+                {settings.map((item, index) => (
+                  <MenuItem key={index} onClick={() => handleMenuClick(item)}>
+                    {item}
+                  </MenuItem>
+                ))}
               </Menu>
             </Box>
           </Box>

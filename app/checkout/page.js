@@ -1,64 +1,88 @@
 "use client"
 import { useRouter } from "next/navigation"
-import { useRef, useState } from "react"
+import { useState } from "react"
 import { useDispatch, useSelector } from "react-redux"
-import { TextField, Button, Checkbox, Container, Typography, Grid, Autocomplete, Box, Card, IconButton, CardHeader, CardContent, Divider } from "@mui/material"
-import { CloudUploadOutlined as CloudUploadOutlinedIcon, Clear, DeleteOutline } from "@mui/icons-material"
+import { FormProvider, useForm } from "react-hook-form"
+import { Button, Container, Typography, Grid, Autocomplete, Box, Card, CardHeader, CardContent, Divider, Table, TableHead, TableRow, TableCell } from "@mui/material"
 import states from "states-us"
 
-import Alert from "@/app/components/Alert"
-import Auth from "@/app/components/Auth"
-import Navbar from "@/app/components/Navbar"
-import VisuallyHiddenInput from "@/app/components/VisuallyHiddenInput"
-import * as orderApis from "@/app/apis/order"
-import { emptyCart } from "@/app/store/cart"
+import Alert from "../components/Alert"
+import Auth from "../components/Auth"
+import FormField from "@/app/components/forms/FormField"
+import Layout from "../components/Layout"
+import * as orderApis from "../../apis/order"
+import { emptyCart } from "../../store/cart"
 
 export default function Checkout() {
   const userState = useSelector(state => state.user)
   const cart = useSelector((state) => state.cart)
   const dispatch = useDispatch()
   const router = useRouter()
-  const formRef = useRef(null)
-  const [ship, setShip] = useState(userState.warehouseUser ? false : true)
   const [loading, setLoading] = useState(false)
-  const [label, setLabel] = useState({ name: "Upload Label" })
+  const [state, setState] = useState(null)
   const [toast, setToast] = useState({
     type: "success",
     open: false,
     message: null,
   })
+  const form = useForm({
+    defaultValues: {
+      order: [{
+        "customer_name": "",
+        "customer_mobile": "",
+        "address_line_1": "",
+        "address_line_2": "",
+        "state": "",
+        "city": "",
+        "zipcode": "",
+      }]
+    }
+  })
 
-  const getUnitPrice = (product) => product.cart >= product.minimum_wholsale_quantity && product.minimum_wholsale_quantity > 0 ? product.wholsale_price : product.retail_price
+  const getUnitPrice = (product) => product.retail_price
   const totalPrice = cart.reduce((total, product) => total + getUnitPrice(product) * product.cart, 0)
-  const totalShipping = cart.reduce((total, product) => total + product.shipping_price * product.cart, 0)
 
-  const handleSubmit = async (e) => {
+  const getShippingPrice = (product) => product.shipping_price
+  const shippingPrice = cart.reduce((total, product) => total + (product.shipping_on_each ? getShippingPrice(product) * product.cart : getShippingPrice(product)), 0)
+
+  const handleDetails = () => {
+    form.setValue("order[customer_name]", userState.user?.name)
+    form.setValue("order[customer_mobile]", userState.user?.mobile)
+    form.setValue("order[email]", userState.user?.email)
+  }
+
+  const handleSubmit = async (data) => {
+
     try {
       setLoading(true)
-      const form = new FormData(e.target)
-      e.preventDefault()
+      const formData = new FormData()
 
       cart.forEach((product, index) => {
-        form.append(`order_lineitems[${index}][stripe_product_id]`, product.product_id)
-        form.append(`order_lineitems[${index}][product_id]`, product.id)
-        form.append(`order_lineitems[${index}][product_name]`, product.title)
-        form.append(`order_lineitems[${index}][quantity]`, product.cart)
-        form.append(`order_lineitems[${index}][company_id]`, product.company_id)
-        form.append(`order_lineitems[${index}][cost]`, product.cost)
-        form.append(`order_lineitems[${index}][shipping_price]`, product.shipping_price)
-        form.append(`order_lineitems[${index}][price]`, getUnitPrice(product))
-        form.append(`order_lineitems[${index}][price_id]`, product.cart >= product.minimum_wholsale_quantity && product.minimum_wholsale_quantity > 0 ? product.wholsale_price_id : product.retail_price ? product.retail_price_id : "")
+        formData.append(`order_lineitems[${index}][stripe_product_id]`, product.product_id)
+        formData.append(`order_lineitems[${index}][product_id]`, product.id)
+        formData.append(`order_lineitems[${index}][product_name]`, product.title)
+        formData.append(`order_lineitems[${index}][quantity]`, product.cart)
+        formData.append(`order_lineitems[${index}][price]`, product.retail_price)
+        formData.append(`order_lineitems[${index}][shipping_price]`, product.shipping_on_each ? product.shipping_price * product.cart : product.shipping_price)
+        formData.append(`order_lineitems[${index}][company_id]`, product.company_id)
       })
 
-      form.append("order[price]", totalPrice)
-      form.append("order[shipping_price]", cart.reduce((total, product) => total + product.shipping_price, 0))
-      form.append("order[shipping_status]", !ship ? "paid" : "unpaid")
-      form.append("order[label_url]", label)
+      formData.append("order[price]", totalPrice)
+      formData.append("order[shipping_price]", shippingPrice)
+      formData.append("order[company_id]", [...new Set(cart.map(product => product.company_id))].join(', '))
+      formData.append("order[customer_name]", data.order.customer_name)
+      formData.append("order[customer_mobile]", data.order.customer_mobile)
+      formData.append("order[email]", data.order.email)
+      formData.append("order[address_line_1]", data.order.address_line_1)
+      formData.append("order[address_line_2]", data.order.address_line_2)
+      formData.append("order[state]", state)
+      formData.append("order[city]", data.order.city)
+      formData.append("order[zipcode]", data.order.zipcode)
 
-      const response = await orderApis.createOrder(userState.token, form)
+      const response = await orderApis.createOrder(userState.token, formData)
       if (!response.status) throw new Error(response.message)
 
-      e.target.reset()
+      form.reset()
       dispatch(emptyCart())
 
       if (response.url) router.replace(response.url)
@@ -70,149 +94,120 @@ export default function Checkout() {
     }
   }
 
-  const shipping = [
-    { label: "UPS" },
-    { label: "USPS" },
-    { label: "Fedex" },
-    { label: "Speedy Post" }
-  ]
-
   return (
-    <Auth>
-      <Alert toast={toast} setToast={setToast} />
-      <Navbar />
+    <Layout>
+      <Auth>
+        <Alert toast={toast} setToast={setToast} />
 
-      <Container maxWidth="lg">
-        <form ref={formRef} onSubmit={handleSubmit} method="post" encType="multipart/form-data">
-          <Box display="flex" flexDirection="row" justifyContent="space-between" alignItems="center" my={3}>
-            <Typography variant="h4" fontWeight={700}>Checkout</Typography>
-            {userState.warehouseUser && <Typography><Checkbox name="order[ship_by_warehouse]" checked={ship} onClick={() => setShip(!ship)} />Ship by Warehouse</Typography>}
-          </Box>
-          <Grid container spacing={1}>
-            <Grid item xs={8}>
+        <Container maxWidth="lg">
+          <FormProvider {...form}>
+            <form onSubmit={form.handleSubmit(handleSubmit)} encType="multipart/form-data">
+              <Box display="flex" flexDirection="row" justifyContent="space-between" alignItems="center" my={10}>
+                <Typography variant="h4" fontWeight={700}>Checkout</Typography>
+                <Button variant="contained" onClick={handleDetails}>Use my details</Button>
+              </Box>
               <Grid container spacing={1}>
-                <Grid item xs={12}>
-                  <TextField fullWidth type="text" label="Notes" variant="outlined" name="order[notes]" size="small" multiline rows={4} />
+                <Grid item xs={8}>
+                  <Grid container spacing={1}>
+                    {/* <Grid item xs={12}>
+                    <TextField fullWidth type="text" label="Notes" variant="outlined" name="order[notes]" size="small" multiline rows={4} />
+                  </Grid> */}
+                    <Grid item xs={12} md={4}>
+                      <FormField type="text" label="Customer Name" variant="outlined" name="order[customer_name]" size="small" rules={{ required: "Name is required" }} InputLabelProps={{ shrink: true }} />
+                    </Grid>
+                    <Grid item xs={12} md={4}>
+                      <FormField type="text" label="Customer Mobile" variant="outlined" name="order[customer_mobile]" size="small" rules={{ required: "Mobile is required" }} InputLabelProps={{ shrink: true }} />
+                    </Grid>
+                    <Grid item xs={12} md={4}>
+                      <FormField type="text" label="Customer Email" variant="outlined" name="order[email]" value={userState.user?.email} size="small" rules={{ required: "Email is required" }} InputLabelProps={{ shrink: true }} />
+                    </Grid>
+                    <Grid item xs={12} md={6}>
+                      <FormField type="text" label="Address Line 1" variant="outlined" name="order[address_line_1]" size="small" rules={{ required: "Address is required" }} />
+                    </Grid>
+                    <Grid item xs={12} md={6}>
+                      <FormField type="text" label="Address Line 2" variant="outlined" name="order[address_line_2]" size="small" />
+                    </Grid>
+                    <Grid item xs={12} md={4}>
+                      <Autocomplete
+                        disablePortal
+                        id="state"
+                        value={state}
+                        options={states.map(o => o.name)}
+                        fullWidth
+                        size="small"
+                        renderInput={(params) => <FormField {...params} name="order[state]" label="State" />}
+                        onChange={(e, option) => setState(option)}
+                        freeSolo
+                        required
+                      />
+                    </Grid>
+                    <Grid item xs={12} md={4}>
+                      <FormField type="text" label="City" variant="outlined" name="order[city]" size="small" rules={{ required: "City is required" }} />
+                    </Grid>
+                    <Grid item xs={12} md={4}>
+                      <FormField type="text" label="Zip Code" variant="outlined" name="order[zipcode]" size="small" rules={{ required: "Zip code is required" }} />
+                    </Grid>
+                    <Grid item xs={9} />
+                    <Grid item xs={3} md={3}>
+                      <Button
+                        type="submit"
+                        variant="contained"
+                        color="primary"
+                        disableElevation
+                        fullWidth
+                        disabled={loading}
+                      >
+                        Submit
+                      </Button>
+                    </Grid>
+                  </Grid>
                 </Grid>
-                {ship && <>
-                  <Grid item xs={12} md={6}>
-                    <TextField fullWidth type="text" label="Customer Name" variant="outlined" name="order[customer_name]" size="small" required />
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <TextField fullWidth type="text" label="Customer Mobile" variant="outlined" name="order[customer_mobile]" size="small" required />
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <TextField fullWidth type="text" label="Address Line 1" variant="outlined" name="order[address_line_1]" size="small" required />
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <TextField fullWidth type="text" label="Address Line 2" variant="outlined" name="order[address_line_2]" size="small" />
-                  </Grid>
-                  <Grid item xs={12} md={4}>
-                    <Autocomplete
-                      disablePortal
-                      id="state"
-                      options={states.map(o => o.name)}
-                      fullWidth
-                      size="small"
-                      renderInput={(params) => <TextField {...params} name="order[state]" label="State" />}
-                      freeSolo
-                      required
-                    />
-                  </Grid>
-                  <Grid item xs={12} md={4}>
-                    <TextField fullWidth type="text" label="City" variant="outlined" name="order[city]" size="small" required />
-                  </Grid>
-                  <Grid item xs={12} md={4}>
-                    <TextField fullWidth type="text" label="Zip Code" variant="outlined" name="order[zip]" size="small" required />
-                  </Grid>
-                </>}
-                {!ship && <>
-                  <Grid item xs={12} md={4}>
-                    <Autocomplete
-                      disablePortal
-                      options={shipping}
-                      fullWidth
-                      size="small"
-                      renderInput={(params) => <TextField {...params} name="order[carrier]" label="Label Shipping Carrier" />}
-                      freeSolo
-                    />
-                  </Grid>
-                  <Grid item xs={12} md={4}>
-                    <TextField fullWidth label="Label Tracking #" name="order[tracking_number]" variant="outlined" size="small" required />
-                  </Grid>
-                  <Grid item xs={12} md={4} >
-                    {!label?.type && <Button component="label" variant="outlined" size="large" startIcon={<CloudUploadOutlinedIcon />} disableElevation fullWidth>Upload label<VisuallyHiddenInput type="file" name="order[label_url]" accept=".pdf" onChange={(e) => setLabel(e.target.files[0])} required /></Button>}
-                    {label?.type &&
-                      <Card variant="outlined">
-                        <Box display="flex" justifyContent="space-between" alignItems="center" px={2} py={0.5}>
-                          <Typography variant="body2">{label?.name}</Typography>
-                          <IconButton color="error" onClick={() => setLabel(null)}>
-                            <DeleteOutline fontSize="small" />
-                          </IconButton>
+                <Grid item xs={4}>
+                  <Grid container>
+                    <Card variant="outlined" sx={{ width: "100%" }}>
+                      <CardHeader title="Items" titleTypographyProps={{ variant: "h6" }} />
+                      <CardContent>
+                        <Box mb={5}>
+                          {cart.map((product) => {
+                            return (
+                              <Grid container mb={2}>
+                                <Grid item xs={12}>
+                                  <Typography variant="body1" fontWeight={600}>{product.title}</Typography>
+                                </Grid>
+                                <Grid item xs={10}>
+                                  <Typography variant="body2">Qty {`${product.cart} x $${product.retail_price.toFixed(2)}`}</Typography>
+                                </Grid>
+                                <Grid item sx={2}>
+                                  <Typography variant="body2">${(product.cart * product.retail_price).toFixed(2)}</Typography>
+                                </Grid>
+                                <Divider sx={{ mt: 1 }} />
+                              </Grid>
+                            )
+                          })}
                         </Box>
-                      </Card>
-                    }
+                        <Grid display="flex" justifyContent="space-between">
+                          <Typography>Sub total</Typography>
+                          <Typography>${totalPrice.toFixed(2)}</Typography>
+                        </Grid>
+                        <Divider sx={{ my: 1 }} />
+                        <Grid display="flex" justifyContent="space-between">
+                          <Typography>Shipping</Typography>
+                          <Typography>${shippingPrice.toFixed(2)}</Typography>
+                        </Grid>
+                        <Divider sx={{ my: 1 }} />
+                        <Grid display="flex" justifyContent="space-between">
+                          <Typography>Total</Typography>
+                          <Typography>${(totalPrice + shippingPrice).toFixed(2)}</Typography>
+                        </Grid>
+                      </CardContent>
+                    </Card>
                   </Grid>
-                </>}
-                <Grid item xs={9} />
-                <Grid item xs={3} md={3}>
-                  <Button
-                    type="submit"
-                    variant="contained"
-                    color="primary"
-                    disableElevation
-                    fullWidth
-                    disabled={loading}
-                  >
-                    Submit
-                  </Button>
                 </Grid>
               </Grid>
-            </Grid>
-            <Grid item xs={4}>
-              <Grid container>
-                <Card variant="outlined" sx={{ width: "100%" }}>
-                  <CardHeader title="Items" titleTypographyProps={{ variant: "h6" }} />
-                  <CardContent>
-                    <Box mb={5}>
-                      {cart.map((product) => {
-                        return (
-                          <Grid container mb={2}>
-                            <Grid item xs={12}>
-                              <Typography variant="body1" fontWeight={600}>{product.title}</Typography>
-                            </Grid>
-                            <Grid item xs={10}>
-                              <Typography variant="body2">Qty {`${product.cart} x $${product.retail_price?.toFixed(2)}`}</Typography>
-                            </Grid>
-                            <Grid item sx={2}>
-                              <Typography variant="body2">${(product.cart * product.retail_price)?.toFixed(2)}</Typography>
-                            </Grid>
-                            <Divider sx={{ mt: 1 }} />
-                          </Grid>
-                        )
-                      })}
-                    </Box>
-                    <Grid display="flex" justifyContent="space-between">
-                      <Typography>Sub total</Typography>
-                      <Typography>${totalPrice?.toFixed(2)}</Typography>
-                    </Grid>
-                    <Divider sx={{ my: 1 }} />
-                    <Grid display="flex" justifyContent="space-between">
-                      <Typography>Shipping</Typography>
-                      <Typography>${totalShipping?.toFixed(2)}</Typography>
-                    </Grid>
-                    <Divider sx={{ my: 1 }} />
-                    <Grid display="flex" justifyContent="space-between">
-                      <Typography>Total</Typography>
-                      <Typography>${(totalPrice + totalShipping)?.toFixed(2)}</Typography>
-                    </Grid>
-                  </CardContent>
-                </Card>
-              </Grid>
-            </Grid>
-          </Grid>
-        </form>
-      </Container>
-    </Auth>
+            </form>
+          </FormProvider>
+        </Container>
+      </Auth>
+    </Layout>
   )
 }

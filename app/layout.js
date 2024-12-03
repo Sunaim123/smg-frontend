@@ -1,13 +1,12 @@
-"use client"
 import "./globals.css"
-import { ThemeProvider } from "@mui/material/styles"
-import CssBaseline from "@mui/material/CssBaseline"
-import { Provider } from "react-redux"
-import { PersistGate } from "redux-persist/integration/react"
-import store, { persistor } from "./store"
-import theme from "@/app/utilities/theme"
+import App from "@/app/components/App"
 import FacebookPixel from "@/app/components/FacebookPixel"
 import GoogleAnalytics from "@/app/components/GoogleAnalytics"
+
+export const metadata = {
+  title: "Stock my Goods | New eCommerce Marketplace for Sellers and Warehouse Service Providers",
+  description: "Stock my Goods is a new ecommerce marketplace platform for sellers providing return management, fulfillments by smg, purchase order, inventory tracking, repoting and analysis.",
+}
 
 export default function RootLayout({ children }) {
   return (
@@ -15,16 +14,9 @@ export default function RootLayout({ children }) {
       <head>
         <FacebookPixel />
       </head>
-      <body>
+      <body suppressHydrationWarning={true}>
         <GoogleAnalytics />
-        <Provider store={store}>
-          <PersistGate persistor={persistor}>
-            <ThemeProvider theme={theme}>
-              <CssBaseline />
-              {children}
-            </ThemeProvider>
-          </PersistGate>
-        </Provider>
+        <App>{children}</App>
       </body>
     </html>
   )

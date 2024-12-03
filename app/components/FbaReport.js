@@ -12,7 +12,7 @@ import {
   Legend,
 } from "chart.js"
 import { Line } from "react-chartjs-2"
-import * as reportService from "@/app/services/report"
+import * as reportService from "../../services/report"
 import { Card, CardHeader, CardContent, Box, Button, ButtonGroup, FormControl, InputLabel, Select, MenuItem, Typography } from "@mui/material"
 
 ChartJS.register(
@@ -33,10 +33,9 @@ const FbaReport = (props) => {
   const userState = useSelector(state => state.user)
   const [fbas, setFba] = useState([])
 
-  const getFbas = async () => {
+  const getFbas = async (params) => {
     try {
-      const query = new URLSearchParams({company_ids: props.filters.join(",")})
-      const response = await reportService.getFbaCount(userState.token, query.toString())
+      const response = await reportService.getFbaCount(userState.token, params)
       if (!response.status) throw new Error(response.message)
 
       setFba(response.fbas)
@@ -46,8 +45,10 @@ const FbaReport = (props) => {
   }
 
   useEffect(() => {
-    getFbas()
-  }, [props.filters])
+    let query = ""
+    if (props.company_ids) query = new URLSearchParams({ company_ids: props.company_ids.join(",") }).toString()
+    getFbas(query)
+  }, [props.company_ids])
 
   const data = {
     labels: fbas.map(x => x.month),
@@ -59,8 +60,8 @@ const FbaReport = (props) => {
   }
 
   return (
-    <Card sx={{ border: "2px #ddd dotted" }} elevation={false}>
-      <CardContent sx={{ height: 400 }}>
+    <Card variant="outlined" elevation={false}>
+      <CardContent sx={{ height: "100%" }}>
         <Line options={chartOptions} data={data} />
       </CardContent>
     </Card>

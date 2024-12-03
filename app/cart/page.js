@@ -3,16 +3,15 @@ import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { useDispatch, useSelector } from "react-redux"
-import { Box, Button, Card, CardContent, CardHeader, Container, Grid, IconButton, Table, TableBody, TableCell, TableHead, TableRow, TextField, Typography } from "@mui/material"
+import { Box, Button, Card, CardContent, CardHeader, Container, Divider, Grid, IconButton, Table, TableBody, TableCell, TableHead, TableRow, TextField, Typography } from "@mui/material"
 import Add from "@mui/icons-material/Add"
 import DeleteOutlined from "@mui/icons-material/DeleteOutlined"
 import Remove from "@mui/icons-material/Remove"
 import RemoveShoppingCartOutlined from "@mui/icons-material/RemoveShoppingCartOutlined"
 
-import Alert from "@/app/components/Alert"
-import Auth from "@/app/components/Auth"
-import Navbar from "@/app/components/Navbar"
-import * as cartSlice from "@/app/store/cart"
+import Alert from "../components/Alert"
+import * as cartSlice from "../../store/cart"
+import Layout from "../components/Layout"
 
 function Cart() {
   const userState = useSelector((state) => state.user)
@@ -25,11 +24,28 @@ function Cart() {
     message: null,
   })
 
-  const getUnitPrice = (product) => product.cart >= product.minimum_wholsale_quantity && product.minimum_wholsale_quantity > 0 ? product.wholsale_price : product.retail_price
+  const getUnitPrice = (product) => product.cart >= product.minimum_wholsale_quantity && product.minimum_wholsale_quantity > 0 ? product.wholsale_price : product.retail_price ? product.retail_price : product.price
   const getSubTotal = (product) => (product.cart >= product.minimum_wholsale_quantity && product.minimum_wholsale_quantity > 0 ? product.wholsale_price : product.retail_price ? product.retail_price : product.price) * product.cart
 
+  let shippingPrice = 0
+  if (userState.customer) {
+    const getShippingPrice = (product) => product.shipping_price
+    shippingPrice = cartState.reduce((total, product) => total + (product.shipping_on_each ? getShippingPrice(product) * product.cart : getShippingPrice(product)), 0)
+  }
+
+  const totalPrice = cartState.reduce((total, product) => {
+    return total + getUnitPrice(product) * product.cart
+  }, 0)
+  let netTotal = totalPrice
+  if (userState.customer) netTotal += shippingPrice
+
+  const handleCheckout = () => {
+    if (userState.customer) router.push("/checkout")
+    else router.push("/wp/checkout")
+  }
+
   const handleIncrement = (product, index) => {
-    if (product.quantity <= cartState[index].cart) return setToast({ type: "error", open: true, message: `We do not have more than ${product.quantity} units` })
+    if (product.stock_quantity <= cartState[index].cart) return setToast({ type: "error", open: true, message: `We do not have more than ${product.stock_quantity} units` })
 
     dispatch(cartSlice.increment(index))
   }
@@ -42,41 +58,29 @@ function Cart() {
   }
 
   const handleQuantityChange = (value, product, index) => {
-    if (product.quantity < value) return setToast({ type: "error", open: true, message: `We do not have more than ${product.quantity} units` })
+    if (product.stock_quantity < value) return setToast({ type: "error", open: true, message: `We do not have more than ${product.stock_quantity} units` })
 
     dispatch(cartSlice.setQuantity({ value, index }))
   }
 
-  const totalPrice = cartState.reduce((total, product) => {
-    return total + getUnitPrice(product) * product.cart
-  }, 0)
-
-  const totalShipping = cartState.reduce((total, product) => {
-    return total + product.shipping_price * product.cart
-  }, 0)
-
   if (!cartState.length)
     return (
-      <Auth>
-        <Navbar />
-
-        <Box sx={{ height: "100vh" }} display="flex" flexDirection="column" justifyContent="center" alignItems="center">
-          <RemoveShoppingCartOutlined sx={{ fontSize: 280, backgroundColor: "#eee", padding: 4, borderRadius: 50 }} />
+      <Layout>
+        <Box sx={{ py: 4 }} display="flex" flexDirection="column" justifyContent="center" alignItems="center" my={10}>
+          <RemoveShoppingCartOutlined sx={{ fontSize: 280, padding: 4, background: "hsl(210, 100%, 95%)", color: "hsl(210, 98%, 48%)", borderRadius: 50 }} />
           <Typography variant="h3" fontWeight={900} my={4}>Your Cart is Empty</Typography>
           <Typography variant="h5">Looks like you have not added anything to your cart.</Typography>
           <Typography variant="h5" mb={4}>Go ahead and explore top products.</Typography>
           <Button disableElevation size="large" variant="contained" onClick={() => router.replace("/products")}>Explore Products</Button>
         </Box>
-      </Auth>
+      </Layout>
     )
 
   return (
-    <Auth>
+    <Layout>
       <Alert toast={toast} setToast={setToast} />
-      <Navbar />
-
       <Container maxWidth="xl">
-        {cartState.length > 0 && <Box py={3}>
+        {cartState.length > 0 && <Box py={10}>
           <Typography variant="h4" fontWeight={700} mb={3}>Shopping Cart</Typography>
 
           <Grid container spacing={1}>
@@ -101,7 +105,7 @@ function Cart() {
                         return (
                           <TableRow key={product.id.toString()}>
                             <TableCell>
-                              <Image src={product.thumbnail_url || "/dummy-product.jpeg"} alt={product.title} width={40} height={40} style={{ borderRadius: "4px", border: "1px solid #d1d5db" }} />
+                              <Image src={product.images ? JSON.parse(product.images)[0] : product.thumbnail_url || "/dummy-product.jpeg"} alt={product.title} width={40} height={40} style={{ borderRadius: "4px", border: "1px solid #d1d5db" }} />
                             </TableCell>
                             <TableCell>{product.sku}</TableCell>
                             <TableCell>{product.title}</TableCell>
@@ -133,25 +137,30 @@ function Cart() {
               <Card variant="outlined">
                 <CardHeader title="Summary" titleTypographyProps={{ variant: "h6" }} />
                 <CardContent>
-                  <Grid container>
-                    <Grid item xs={12} display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                      <Typography variant="h5">Total: </Typography>
-                      <Typography variant="h5" fontWeight={800}>${totalPrice.toFixed(2)}</Typography>
-                    </Grid>
-                    <Grid item xs={12} display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                      <Typography variant="h5">Shipping Total: </Typography>
-                      <Typography variant="h5" fontWeight={800}>${totalShipping.toFixed(2)}</Typography>
-                    </Grid>
-                    {userState.warehouseUser && <Typography variant="body2" color="red" mb={2}>* Shipping charges invoice will be sent to you after weighing the items</Typography>}
-                    <Button disableElevation fullWidth size="large" variant="contained" onClick={() => router.push("/checkout")}>Proceed to checkout</Button>
-                  </Grid>
+                  {userState.customer &&
+                    <><Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                      <Typography variant="h6">Sub total: </Typography>
+                      <Typography variant="h6">${totalPrice.toFixed(2)}</Typography>
+                    </Box>
+                      <Divider sx={{ my: 1 }} />
+                      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                        <Typography variant="h6">Shipping: </Typography>
+                        <Typography variant="h6">${shippingPrice.toFixed(2)}</Typography>
+                      </Box>
+                      <Divider sx={{ my: 1 }} />
+                    </>}
+                  <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                    <Typography variant="h5">Total: </Typography>
+                    <Typography variant="h5" fontWeight={800}>${netTotal.toFixed(2)}</Typography>
+                  </Box>
+                  <Button disableElevation fullWidth size="large" variant="contained" onClick={handleCheckout}>Proceed to checkout</Button>
                 </CardContent>
               </Card>
             </Grid>
           </Grid>
         </Box>}
       </Container>
-    </Auth>
+    </Layout>
   )
 }
 

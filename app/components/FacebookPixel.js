@@ -1,4 +1,3 @@
-import React from "react"
 import Script from "next/script"
 
 const FacebookPixel = () => {
@@ -28,7 +27,6 @@ const FacebookPixel = () => {
           src="https://www.facebook.com/tr?id=2946456762161357&ev=PageView&noscript=1"
         />
       </noscript>
-
     </>
   )
 }

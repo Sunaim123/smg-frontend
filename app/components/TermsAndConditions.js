@@ -51,7 +51,7 @@ const TermsAndConditions = (props) => {
             <Typography variant="h6" gutterBottom fontWeight={700}>6. Transactions</Typography>
             <ul>
               <li><Typography variant="body1" gutterBottom>Payment Collection: The Marketplace collects payments from buyers on behalf of sellers. All transactions are processed through Stripe connected accounts. By using the Marketplace, you agree to Stripe's Terms of Service and Privacy Policy, which govern payment processing. For more information, please review Stripe's Terms of Service and Privacy Policy.</Typography></li>
-              <li><Typography variant="body1" gutterBottom>Payouts: The Marketplace processes payouts to sellers on a weekly basis. Payments are disbursed to sellers' connected accounts according to the Marketplace's payout schedule.</Typography></li>
+              <li><Typography variant="body1" gutterBottom>Payouts: The Marketplace processes payouts to sellers on a daily basis. Payments are disbursed to sellers' connected accounts according to the Marketplace's payout schedule.</Typography></li>
               <li><Typography variant="body1" gutterBottom>Return Payments: If necessary, the Marketplace may hold payments related to returns until the return process is completed. Refunds will be processed according to the individual seller's return policy and may be issued after the return has been inspected and approved.</Typography></li>
             </ul>
 
@@ -83,7 +83,7 @@ const TermsAndConditions = (props) => {
 
             <Typography variant="h6" gutterBottom fontWeight={700}>12. Contact Us</Typography>
             <ul>
-              <li><Typography variant="body1" gutterBottom>If you have any questions about these Terms or the Marketplace, please contact us at stockmygoods@gmail.com or +1 (832) 896 2999.</Typography></li>
+              <li><Typography variant="body1" gutterBottom>If you have any questions about these Terms or the Marketplace, please contact us at stockmygoods@gmail.com or +1 (832) 735 0733.</Typography></li>
             </ul>
 
             <FormControlLabel required control={<Checkbox name="terms" />} label="I agree to the Terms of Use and Privacy Policy of Stock my Goods" onChange={() => setState(!state)} />

@@ -1,9 +1,29 @@
-import Home from "./home/page"
+"use client"
+import Divider from "@mui/material/Divider"
 
-export default function App() {
+import Layout from "@/app/components/Layout"
+import Hero from "@/app/components/landing/Hero"
+import LogoCollection from "@/app/components/landing/LogoCollection"
+import Highlights from "@/app/components/landing/Highlights"
+import Pricing from "@/app/components/landing/Pricing"
+import Features from "@/app/components/landing/Features"
+import Testimonials from "@/app/components/landing/Testimonials"
+import FAQ from "@/app/components/landing/FAQ"
+
+export default function Page() {
   return (
-    <main>
-      <Home />
-    </main>
+    <Layout>
+      <Hero />
+      {/* <LogoCollection /> */}
+      <Features />
+      <Divider />
+      <Testimonials />
+      <Divider />
+      <Highlights />
+      <Divider />
+      <Pricing />
+      <Divider />
+      <FAQ />
+    </Layout>
   )
 }

@@ -1,5 +1,5 @@
 import { Button, Grid, Typography, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material"
-import * as constants from "@/app/utilities/constants"
+import * as constants from "../../utilities/constants"
 
 export default function ReturnServiceModal(props) {
   const { selectedService, modalOpen, handleModalClose } = props

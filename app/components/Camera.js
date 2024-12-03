@@ -47,7 +47,7 @@ export default function Camera(props) {
         size="small"
         style={{
           position: "absolute",
-          top: 12,
+          top: 8,
           right: 5,
           zIndex: 1,
           background: "#eee",
@@ -93,7 +93,7 @@ export default function Camera(props) {
           }}
         >Upload</Button>
         {
-          !camera && !picture && props.camera && <Button
+          !camera && !picture && <Button
             type="button"
             variant="contained"
             disableElevation
