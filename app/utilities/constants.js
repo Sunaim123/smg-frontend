@@ -6,17 +6,10 @@ export const imageExtensions = ["image/jpeg", "image/jpg", "image/png"]
 
 export const returnStatus = {
   "received": <Chip label="RECEIVED" />,
+  "opened": <Chip label="OPENED" />,
   "ship requested": <Chip label="SHIP REQUESTED" color="warning" />,
   "shipped": <Chip label="SHIPPED" color="success" />,
   "delivered": <Chip label="DELIVERED" color="success" />,
-  // "open": <Chip label="OPEN" />,
-  // "awaiting shipment": <Chip label="AWAITING SHIPMENT" color="warning" />,
-  // "declined": <Chip label="DECLINED" color="error" />,
-}
-
-export const returnType = {
-  "refund": <Chip label="REFUND" color="warning" />,
-  "exchange": <Chip label="EXCHANGE" color="info" />
 }
 
 export const returnServiceStatus = {
@@ -44,6 +37,7 @@ export const paymentStatus = {
 
 export const orderStatus = {
   "received": <Chip label="RECEIVED" />,
+  "awaiting payment": <Chip label="AWAITING PAYMENT" />,
   "shipped": <Chip label="SHIPPED" color="success" />,
   "cancelled": <Chip label="CANCELLED" color="error" />,
   "refunded": <Chip label="REFUNDED" color="warning" />,
@@ -67,6 +61,5 @@ export const getCompanyStatus = (status, endDate) => {
 export const getFormattedDate = (date) => moment(date).format("Do MMM")
 export const getFormattedDatetime = (date) => moment(date).format("DD-MM-YYYY HH:mm")
 export const superUser = (role = "") => role === "super admin"
-export const warehouseUser = (role = "") => role.indexOf("warehouse") !== -1
-export const companyUser = (role = "") => role.indexOf("company") !== -1
-export const customer = (role = "") => role === "customer"
+export const warehouseUser = (role = "") => role.toLowerCase().indexOf("warehouse") !== -1
+export const companyUser = (role = "") => role.toLowerCase().indexOf("company") !== -1

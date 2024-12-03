@@ -1,6 +1,6 @@
 "use client"
-import { useRef, useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
+import { useRef, useState } from "react"
 import { useSelector } from "react-redux"
 import { Button, Container, Grid, TextField, Typography, IconButton } from "@mui/material"
 import { CloudUploadOutlined, DeleteOutlined } from "@mui/icons-material"
@@ -18,7 +18,6 @@ export default function Repackaging() {
   const searchParams = useSearchParams()
   const formRef = useRef(null)
   const [images, setImages] = useState(null)
-  const [loading, setLoading] = useState(false)
   const [toast, setToast] = useState({
     type: "success",
     open: false,
@@ -44,7 +43,6 @@ export default function Repackaging() {
 
   const handleSubmit = async (e) => {
     try {
-      setLoading(true)
       e.preventDefault()
       const form = new FormData()
 
@@ -65,14 +63,8 @@ export default function Repackaging() {
       router.back()
     } catch (error) {
       setToast({ type: "error", open: true, message: error.message })
-    } finally {
-      setLoading(false)
     }
   }
-
-  useEffect(() => {
-    if (userState.customer) router.replace("/products")
-  }, [])
 
   return (
     <Auth>
@@ -139,7 +131,6 @@ export default function Repackaging() {
               variant="contained"
               color="primary"
               size="large"
-              disabled={loading}
               disableElevation
             >submit</Button>
           </Grid>

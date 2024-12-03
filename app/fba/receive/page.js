@@ -132,8 +132,6 @@ export default function FbaService() {
   }
 
   useEffect(() => {
-    if (userState.customer) router.replace("/products")
-
     getFba()
   }, [])
 

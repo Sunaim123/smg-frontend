@@ -101,7 +101,6 @@ export default function Service() {
   }
 
   useEffect(() => {
-    if (userState.customer) router.replace("/products")
     getReturn()
   }, [])
 

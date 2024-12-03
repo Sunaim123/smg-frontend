@@ -1,7 +1,6 @@
 "use client"
 import { useEffect } from "react"
 import { useSelector } from "react-redux"
-import { useRouter } from "next/navigation"
 import { Box } from "@mui/material"
 import { CheckCircle } from "@mui/icons-material"
 import Navbar from "@/app/components/Navbar"
@@ -9,12 +8,11 @@ import * as constants from "@/app/utilities/constants"
 import Link from "next/link"
 
 export default function StripeReturn() {
-  const router = useRouter()
   const userState = useSelector(state => state.user)
 
   useEffect(() => {
-    if (!userState.user) router.replace("/login")
-    if (!userState.companyUser) router.replace("/products")
+    if (!userState.user) window.location.href = "/login"
+    if (!userState.companyUser) window.location.href = "/dashboard"
   }, [])
 
   return (

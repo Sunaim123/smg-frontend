@@ -19,7 +19,6 @@ export const userSlice = createSlice({
       state.token = action.payload.token
       state.warehouseUser = constants.warehouseUser(action.payload.user.role.name)
       state.companyUser = constants.companyUser(action.payload.user.role.name)
-      state.customer = constants.customer(action.payload.user.role.name)
       state.permissions = action.payload.permissions
     },
     logout: (state) => {

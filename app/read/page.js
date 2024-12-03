@@ -2,14 +2,12 @@
 import axios from "@/app/utilities/axios"
 import { useEffect, useState } from "react"
 import { useSelector } from "react-redux"
-import { useRouter } from "next/navigation"
 import * as constants from "@/app/utilities/constants"
 import Navbar from "../components/Navbar"
 import { Container, Typography, TextField, Grid } from '@mui/material'
 import Auth from "@/app/components/Auth"
 
 export default function Read() {
-  const router = useRouter()
   const userState = useSelector(state => state.user)
 
   const [feedback, setFeedback] = useState({});
@@ -28,7 +26,7 @@ export default function Read() {
   }
 
   useEffect(() => {
-    if (!userState.user) router.replace("/")
+    if (!userState.user) window.location.href = "/"
     if (id) getFeedback()
   }, [])
 

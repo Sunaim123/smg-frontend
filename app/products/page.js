@@ -8,11 +8,8 @@ import Alert from "@/app/components/Alert"
 import Auth from "@/app/components/Auth"
 import Navbar from "@/app/components/Navbar"
 import ProductListView from "@/app/components/ProductListView"
-import InventoryGridView from "@/app/components/InventoryGridView"
 import ProductGridView from "@/app/components/ProductGridView"
-import * as inventoryApis from "@/app/apis/inventory"
 import * as productApis from "@/app/apis/product"
-import * as companyApis from "@/app/apis/company"
 import * as cartSlice from "@/app/store/cart"
 
 export default function Products() {
@@ -20,12 +17,14 @@ export default function Products() {
   const cartState = useSelector(state => state.cart)
   const dispatch = useDispatch()
   const router = useRouter()
-  const ref = useRef(null)
+  const formRef = useRef(null)
   const [products, setProducts] = useState([])
-  const [filter, setFilter] = useState()
+  const [filter, setFilter] = useState({
+    tracking_number: null,
+    search: null
+  })
   const [count, setCount] = useState(0)
   const [productCount, setproductCount] = useState({ quantity: 0, count: 0 })
-  const [company, setCompany] = useState(null)
   const [active, setActive] = useState(1)
   const limit = 25
   const [toast, setToast] = useState({
@@ -39,8 +38,12 @@ export default function Products() {
   }
 
   const handleClear = () => {
-    setFilter()
-    ref.current.value = ""
+    setFilter({
+      tracking_number: null,
+      search: null
+    })
+    if (userState.warehouseUser) formRef.current.tracking_number.value = ""
+    formRef.current.search.value = ""
   }
 
   const openModal = (img) => {
@@ -51,7 +54,7 @@ export default function Products() {
     try {
       if (!window.confirm("Are you sure you want to delete?")) return
 
-      const response = await inventoryApis.deleteInventory(userState.token, id)
+      const response = await productApis.deleteProduct(userState.token, id)
       if (!response.status) throw new Error(response.message)
 
       setProducts((prevProducts) => prevProducts.filter((product) => product.id !== id))
@@ -61,7 +64,6 @@ export default function Products() {
   }
 
   const handleCart = (product) => {
-    if (product.quantity === 0) return setToast({ type: "error", open: true, message: "Out of stock" })
     const index = cartState.findIndex((item) => item.id === product.id)
 
     if (index === -1) {
@@ -74,28 +76,11 @@ export default function Products() {
     }
   }
 
-  const getInventories = async () => {
-    try {
-      const params = {}
-      if (filter) params.tracking_number = filter.tracking_number
-      if (userState.warehouseUser) params.offset = (active - 1) * limit
-      if (userState.warehouseUser) params.limit = limit
-
-      const query = new URLSearchParams(params)
-      const response = await inventoryApis.getInventories(userState.token, query.toString())
-      if (!response.status) throw new Error(response.message)
-
-      setCount(response.count)
-      setProducts(response.products)
-    } catch (error) {
-      setToast({ type: "error", open: true, message: error.message })
-    }
-  }
-
   const getProducts = async () => {
     try {
       const params = {}
-      if (filter) params.title = filter.title
+      if (filter.tracking_number) params.tracking_number = filter.tracking_number
+      if (filter.search) params.search = filter.search
       if (userState.warehouseUser) params.offset = (active - 1) * limit
       if (userState.warehouseUser) params.limit = limit
 
@@ -110,9 +95,9 @@ export default function Products() {
     }
   }
 
-  const getInventoryCount = async () => {
+  const getProductCount = async () => {
     try {
-      const response = await inventoryApis.getInventoryCount(userState.token, "")
+      const response = await productApis.getProductCount(userState.token, "")
       if (!response.status) throw new Error(response.message)
 
       setproductCount({ cost: response.cost, quantity: response.quantity });
@@ -121,24 +106,9 @@ export default function Products() {
     }
   }
 
-  const getCompany = async () => {
-    try {
-      const response = await companyApis.getCompany(userState.token, userState.user.company_id)
-      if (!response.status) throw new Error(response.message)
-
-      setCompany(response.company)
-    } catch (error) {
-      setToast({ type: "error", open: true, message: error.message })
-    }
-  }
-
   useEffect(() => {
-    if (userState.customer) getProducts()
-    else {
-      getInventories()
-      getInventoryCount()
-    }
-    if (userState.companyUser) getCompany()
+    getProducts()
+    getProductCount()
   }, [filter, active])
 
   return (
@@ -147,80 +117,83 @@ export default function Products() {
       <Navbar />
 
       <Container maxWidth="xl">
-        <Box display="flex" justifyContent="space-between" alignItems="center" my={3}>
+        <Grid container my={3}>
           <Grid item xs={6}>
-            <Typography variant="h4" fontWeight={700}>SMG Inventory</Typography>
+            <Typography variant="h4" fontWeight={700}>Products</Typography>
             {userState.warehouseUser && <Typography color="textSecondary">Quantity: {productCount.quantity} | Cost: ${productCount.cost?.toFixed(2)}</Typography>}
           </Grid>
 
-          {userState.warehouseUser && (
-            <Grid xs={6} display="flex" justifyContent="space-between" alignItems="center" gap={1}>
-              <TextField
-                type="text"
-                label="Tracking Number"
-                name="tracking_number"
-                variant="outlined"
-                size="small"
-                inputRef={ref}
-              />
-              <Button
-                disableElevation
-                size="small"
-                variant="contained"
-                onClick={() => setFilter({ tracking_number: ref.current.value })}
-              >
-                Filter
-              </Button>
-              <Button
-                disableElevation
-                size="small"
-                variant="contained"
-                color="error"
-                onClick={handleClear}
-              >
-                Clear
-              </Button>
-              <Button
-                disableElevation
-                size="small"
-                variant="contained"
-                onClick={() => handleLink("/product")}
-              >
-                New
-              </Button>
-            </Grid>
-          )}
-          {/* {userState.companyUser && company?.status === "onboard" &&
-            <Button onClick={() => router.replace("/listings")}>
-              My Listings
-            </Button>
-          } */}
-          {userState.customer &&
-            <Grid display="flex" gap={2}>
-              <TextField
-                type="text"
-                label="Search"
-                name="title"
-                variant="outlined"
-                size="small"
-                inputRef={ref}
-              />
-              <Button
-                disableElevation
-                size="small"
-                variant="contained"
-                onClick={() => setFilter({ title: ref.current.value })}
-              >
-                Search
-              </Button>
-            </Grid>}
-        </Box>
+          <Grid item xs={6}>
+            <form
+              ref={formRef}
+              onSubmit={(e) => {
+                e.preventDefault()
+                setFilter({
+                  tracking_number: userState.warehouseUser ? formRef.current.tracking_number.value : null,
+                  search: formRef.current.search.value,
+                })
+              }}
+            >
+              <Grid container spacing={2}>
+                  <Grid item xs={4}>
+                {userState.warehouseUser && (
+                    <TextField
+                      fullWidth
+                      type="text"
+                      label="Tracking Number"
+                      name="tracking_number"
+                      variant="outlined"
+                      size="small"
+                    />
+                )}
+                  </Grid>
+                <Grid item xs={4}>
+                  <TextField
+                    fullWidth
+                    type="text"
+                    label="Search"
+                    name="search"
+                    variant="outlined"
+                    size="small"
+                  />
+                </Grid>
+                <Grid item xs={4} display="flex" gap={1}>
+                  <Button
+                    disableElevation
+                    type="submit"
+                    size="small"
+                    variant="contained"
+                  >
+                    Filter
+                  </Button>
+                  <Button
+                    disableElevation
+                    size="small"
+                    variant="contained"
+                    color="error"
+                    onClick={handleClear}
+                  >
+                    Clear
+                  </Button>
+                 {userState.warehouseUser &&
+                  <Button
+                    disableElevation
+                    size="small"
+                    variant="contained"
+                    onClick={() => handleLink("/product")}
+                  >
+                    New
+                  </Button>}
+                </Grid>
+              </Grid>
+            </form>
+          </Grid>
+        </Grid>
 
-        {userState.companyUser && <InventoryGridView products={products} onCart={handleCart} />}
-        {userState.customer && <ProductGridView products={products} onCart={handleCart} />}
+        {userState.companyUser && <ProductGridView products={products} onCart={handleCart} />}
       </Container>
 
-      {userState.warehouseUser && <ProductListView products={products} limit={limit} count={count} active={active} onChange={(page) => setActive(page)} onLink={handleLink} onDelete={handleDelete} handleModal={(img) => openModal(img)} seller={false} />}
+      {userState.warehouseUser && <ProductListView products={products} limit={limit} count={count} active={active} onChange={(page) => setActive(page)} onLink={handleLink} onDelete={handleDelete} handleModal={(img) => openModal(img)} />}
     </Auth>
   )
 }

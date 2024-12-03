@@ -60,16 +60,6 @@ export const changePassword = async (token, payload) => {
   return response
 }
 
-export const updateCompany = async (token, payload) => {
-  const { data: response } = await axios.put("/api/user/company", payload, {
-    headers: {
-      "Token": token
-    }
-  })
-
-  return response
-}
-
 export const register = async (payload) => {
   const { data: response } = await axios.post("/api/user/register", payload)
 

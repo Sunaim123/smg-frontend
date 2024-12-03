@@ -1,5 +1,5 @@
 "use client"
-import { useRouter, useSearchParams, usePathname } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
 import { useSelector } from "react-redux"
 import { Autocomplete, Box, Grid, Button, Container, FormControl, IconButton, InputLabel, MenuItem, Select, Table, TableBody, TableCell, TableHead, TableRow, TextField, Typography, Chip, Tooltip, OutlinedInput } from "@mui/material"
@@ -20,15 +20,14 @@ export default function Fbas() {
   const userState = useSelector(state => state.user)
   const router = useRouter()
   const searchParams = useSearchParams()
-  const pathname = usePathname()
 
   const [filters, setFilters] = useState({
     return_status: searchParams.get("status") || null,
   })
   const [companies, setCompanies] = useState([])
-  const [companyIds, setCompanyIds] = useState(typeof searchParams.get("company_id") === "string" ? searchParams.get("company_id").split(",").map(Number) : [])
+  const [companyIds, setCompanyIds] = useState([])
   const [fbas, setFbas] = useState([])
-  const [status, setStatus] = useState(typeof searchParams.get("status") === "string" ? searchParams.get("status").split(",") : [])
+  const [status, setStatus] = useState([])
   const [count, setCount] = useState(0)
   const [active, setActive] = useState(1)
   const [trash, setTrash] = useState(false)
@@ -43,13 +42,9 @@ export default function Fbas() {
     const {
       target: { value },
     } = event
-
-    const selectedStatus = typeof value === "string" ? value.split(",") : value
-    setStatus(selectedStatus)
-
-    const params = new URLSearchParams(searchParams)
-    params.set('status', selectedStatus.join(','))
-    router.push(`${pathname}?${params.toString()}`)
+    setStatus(
+      typeof value === "string" ? value.split(",") : value,
+    )
   }
 
   const handleCompanyChange = (event) => {
@@ -57,20 +52,9 @@ export default function Fbas() {
       target: { value },
     } = event
 
-    const selectedId = typeof value === "string" ? value.split(',').map(Number) : value
-    setCompanyIds(selectedId)
-
-    const params = new URLSearchParams(searchParams)
-    params.set('company_id', selectedId.join(','))
-    router.push(`${pathname}?${params.toString()}`)
-  }
-
-  const handleTrashSearch = () => {
-    setTrash(!trash)
-
-    const params = new URLSearchParams(searchParams)
-    params.set('trash', !trash)
-    router.push(`${pathname}?${params.toString()}`)
+    setCompanyIds(
+      typeof value === "string" ? value.split(',').map(Number) : value
+    )
   }
 
   const handleClear = () => {
@@ -78,7 +62,6 @@ export default function Fbas() {
     setCompanyIds([])
     setStatus([])
     setTrash(false)
-    router.push(pathname)
   }
 
   const handleTrash = async (id) => {
@@ -138,15 +121,18 @@ export default function Fbas() {
       setToast({ type: "error", open: true, message: error.message })
     }
   }
-  
+
+  useEffect(() => {
+    if (userState.warehouseUser) getComapnies()
+  }, [])
+
+  useEffect(() => {
+    if (searchParams.has("status")) setStatus([searchParams.get("status")])
+  }, [searchParams.get("status")])
+
   useEffect(() => {
     getFbas()
   }, [filters, trash, active, status, companyIds])
-
-  useEffect(() => {
-    if (userState.customer) router.replace("/products")
-    if (userState.warehouseUser) getComapnies()
-  }, [])
 
   return (
     <Auth>
@@ -159,7 +145,7 @@ export default function Fbas() {
             <Typography variant="h4" fontWeight={700}>FBA Shipments</Typography>
           </Grid>
           <Grid item xs={8} container justifyContent="flex-end" alignItems="center" gap={1}>
-            <Chip variant={trash ? "filled" : "outlined"} label="Trash" color="error" size="medium" onClick={handleTrashSearch}></Chip>
+            <Chip variant={trash ? "filled" : "outlined"} label="Trash" color="error" size="medium" onClick={() => setTrash(!trash)}></Chip>
 
             <Grid item xs={2}>
               <FormControl fullWidth size="small">

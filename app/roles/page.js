@@ -50,8 +50,6 @@ export default function Roles() {
   }
 
   useEffect(() => {
-    if (userState.customer) router.replace("/products")
-
     let params
     if (userState.warehouseUser) params = { role: "warehouse" }
     if (userState.companyUser || userState.companyAdmin) params = { role: "company" }

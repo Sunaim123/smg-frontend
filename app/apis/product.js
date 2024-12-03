@@ -51,3 +51,13 @@ export const getProduct = async (token, id) => {
 
   return response
 }
+
+export const getProductCount = async (token, query) => {
+  const { data: response } = await axios.get("/api/product-count?" + query, {
+    headers: {
+      "Token": token
+    }
+  })
+
+  return response
+}

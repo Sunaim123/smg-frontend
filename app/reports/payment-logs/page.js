@@ -106,7 +106,7 @@ export default function paymentLogs() {
   ]
 
   useEffect(() => {
-    if (!userState.permissions["READ_REPORTS"]) router.replace("/dashboard")
+    if (!userState.permissions["READ_PAYMENT_LOGS"]) router.replace("/dashboard")
 
     handleFilter()
     getCompanies()

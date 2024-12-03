@@ -6,14 +6,14 @@ import { useState } from "react"
 import { useDispatch } from "react-redux"
 import { Box, Button, Grid, TextField, Typography } from "@mui/material"
 
+import * as userApis from "@/app/apis/user"
 import Alert from "@/app/components/Alert"
 import Copyright from "@/app/components/Copyright"
-import * as userApis from "@/app/apis/user"
 import * as userSlice from "@/app/store/user"
 import authImage from "@/public/auth.jpg"
-import logoImage from "@/public/brand.png"
+import logoImage from "@/public/smg-light-rounded.png"
 
-export default function Login() {
+export default function Page() {
   const dispatch = useDispatch()
   const router = useRouter()
   const [usernameError, setUsernameError] = useState(false)
@@ -54,8 +54,7 @@ export default function Login() {
       dispatch(userSlice.login(response))
       e.target.reset()
 
-      if (response.user.role.name === "customer") router.replace("/products")
-      else router.replace("/dashboard")
+      router.replace("/dashboard")
     } catch (error) {
       setToast({ type: "error", open: true, message: error.message })
     } finally {
@@ -99,7 +98,7 @@ export default function Login() {
 
           <form onSubmit={handleSubmit} noValidate>
             <Box display="flex" flexDirection="column" gap={1} mb={4}>
-              <TextField type="text" name="username" label="Username" required autoFocus error={usernameError} helperText={usernameError ? "Enter your username to continue" : ""} onChange={() => handleChange("username")} />
+              <TextField type="text" name="username" label="Email or Username" required autoFocus error={usernameError} helperText={usernameError ? "Enter your username to continue" : ""} onChange={() => handleChange("username")} />
               <TextField type="password" name="password" label="Password" required error={passwordError} helperText={passwordError ? "Enter your password to continue" : ""} onChange={() => handleChange("password")} />
 
               <Box textAlign="right">
@@ -109,11 +108,12 @@ export default function Login() {
               <Button
                 type="submit"
                 fullWidth
+                size="large"
                 disabled={loading}
               >Login</Button>
 
               <Box textAlign="center">
-                <Link href="/customer-register" style={{ textDecoration: "none" }}>Don't have an account? Register now!</Link>
+                <Link href="/register" style={{ textDecoration: "none" }}>Don't have an account? Register now!</Link>
               </Box>
             </Box>
 

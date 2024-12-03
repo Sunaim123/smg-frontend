@@ -5,7 +5,7 @@ const cartSlice = createSlice({
   initialState: [],
   reducers: {
     addToCart: (state, action) => {
-      state.push({ ...action.payload, cart: action.payload.cartQuantity ? action.payload.cartQuantity : 1 })
+      state.push({ ...action.payload, cart: 1 })
     },
     increment: (state, action) => {
       state[action.payload].cart = state[action.payload].cart + 1

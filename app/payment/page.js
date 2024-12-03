@@ -1,7 +1,7 @@
 "use client"
-import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useSelector, useDispatch } from "react-redux"
+import { useState } from "react"
 import { Box, Card, Container, Divider, List, ListItem, ListItemButton, ListItemText, Typography, Button, TextField } from "@mui/material"
 
 import axios from "@/app/utilities/axios"
@@ -16,7 +16,7 @@ const Payment = () => {
 
   const handleSubscribe = async (price, coupon) => {
     try {
-      const { data: response } = await axios.post("/service/stripe/subscribe", { price, coupon, email: userState.user.email }, {
+      const { data: response } = await axios.post("/service/stripe/subscribe", { price, coupon }, {
         headers: {
           "Token": userState.token,
         }
@@ -25,7 +25,7 @@ const Payment = () => {
 
       router.replace(response.url)
     } catch (error) {
-      setToast({ type: "error", open: true, message: error.message })
+      alert(error.message)
     }
   }
 
@@ -38,10 +38,6 @@ const Payment = () => {
     dispatch(userSlice.logout())
     router.replace("/login")
   }
-
-  useEffect(() => {
-    if (userState.customer) router.replace("/products")
-  }, [])
 
   return (
     <Container maxWidth="sm">

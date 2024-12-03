@@ -39,7 +39,7 @@ const DashboardReport = (props) => {
   }, [props.filters])
 
   return (
-    <Grid container spacing={1} my={3}>
+    <Grid container spacing={3}>
       <Grid item xs={12} md={6}>
         <Card sx={{ border: "2px #ddd dotted" }} elevation={0}>
           <CardHeader title="Number of Returns" titleTypographyProps={{ variant: "h6", fontWeight: 700 }} />

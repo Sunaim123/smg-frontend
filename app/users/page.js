@@ -1,90 +1,97 @@
 "use client"
-import { useState, useEffect } from "react"
-import { useSelector } from "react-redux"
 import { useRouter } from "next/navigation"
-import { Box, Tab, Tabs, Typography } from "@mui/material"
+import { useEffect, useState } from "react"
+import { useSelector } from "react-redux"
+import { Box, Button, Container, IconButton, Table, TableBody, TableCell, TableHead, TableRow, Typography, Tooltip } from "@mui/material"
+import DeleteOutlined from "@mui/icons-material/DeleteOutlined"
+import EditOutlined from "@mui/icons-material/EditOutlined"
 
-import Navbar from "@/app/components/Navbar"
 import Alert from "@/app/components/Alert"
 import Auth from "@/app/components/Auth"
-import Permissions from "../components/Permissions"
-import Users from "../components/Users"
-import Roles from "../components/Roles"
+import Navbar from "@/app/components/Navbar"
+import * as userApis from "@/app/apis/user"
 
-function CustomTabPanel(props) {
-  const { children, value, index, ...other } = props
-
-  return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      id={`simple-tabpanel-${index}`}
-      aria-labelledby={`simple-tab-${index}`}
-      {...other}
-    >
-      {value === index && (
-        <Box>
-          <Typography>{children}</Typography>
-        </Box>
-      )}
-    </div>
-  )
-}
-
-function a11yProps(index) {
-  return {
-    id: `simple-tab-${index}`,
-    "aria-controls": `simple-tabpanel-${index}`,
-  }
-}
-
-export default function Page() {
-  const router = useRouter()
+export default function Users() {
   const userState = useSelector(state => state.user)
-  const [value, setValue] = useState(0)
+  const router = useRouter()
+  const [users, setUsers] = useState([])
   const [toast, setToast] = useState({
     type: "success",
     open: false,
     message: null,
   })
 
-  const handleChange = (e, newValue) => {
-    setValue(newValue)
+  const handleLink = (link) => {
+    router.push(link)
+  }
+
+  const handleDelete = async (id) => {
+    try {
+      if (!window.confirm("Are you sure you want to delete?")) return
+
+      const response = await userApis.deleteUser(userState.token, id)
+      if (!response.status) throw new Error(response.message)
+
+      setUsers(users.filter(user => user.id !== id))
+    } catch (error) {
+      setToast({ type: "error", open: true, message: error.message })
+    }
+  }
+
+  const getUsers = async () => {
+    try {
+      const response = await userApis.getUsers(userState.token, "")
+      if (!response.status) throw new Error(response.message)
+
+      setUsers(response.users)
+    } catch (error) {
+      setToast({ type: "error", open: true, message: error.message })
+    }
   }
 
   useEffect(() => {
-    if (userState.customer) router.replace("/products")
-
+    getUsers()
   }, [])
-  
+
   return (
     <Auth>
-      <Navbar />
       <Alert toast={toast} setToast={setToast} />
-        <Box py={3}>
-          <Tabs value={value} onChange={handleChange} aria-label="basic tabs example">
-            <Tab label="Users" {...a11yProps(0)} />
-            <Tab label="Roles" {...a11yProps(1)} />
-            {userState.permissions && userState.permissions["UPDATE_ROLE"] &&
-            <Tab label="Permissions" {...a11yProps(2)} />}
-          </Tabs>
+      <Navbar />
 
-          <CustomTabPanel value={value} index={0}>
-            <Box py={3}>
-              <Users />
-            </Box>
-          </CustomTabPanel>
-
-          <CustomTabPanel value={value} index={1}>
-            <Box py={3}>
-              <Roles />
-            </Box>
-          </CustomTabPanel>
-
-          <CustomTabPanel value={value} index={2}>
-            <Permissions />
-          </CustomTabPanel>
+      <Container maxWidth="xl">
+        <Box display="flex" justifyContent="space-between" alignItems="center" my={3}>
+          <Typography variant="h4" fontWeight={700}>Users</Typography>
+          <Button onClick={() => router.push("/user")}>New</Button>
         </Box>
+      </Container>
+
+      <Table>
+        <TableHead>
+          <TableRow sx={{ backgroundColor: "#f3f4f6" }}>
+            <TableCell>Name</TableCell>
+            <TableCell>Email</TableCell>
+            <TableCell>Mobile</TableCell>
+            {userState.companyUser && <TableCell>Company</TableCell>}
+            <TableCell>Role</TableCell>
+            <TableCell align="center">Actions</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {users.map((user) => (
+            <TableRow key={user.id.toString()}>
+              <TableCell>{user.name}</TableCell>
+              <TableCell>{user.email}</TableCell>
+              <TableCell>{user.mobile}</TableCell>
+              {userState.companyUser && <TableCell>{user.company?.name}</TableCell>}
+              <TableCell sx={{ textTransform: "capitalize" }}>{user.user_role?.role?.name}</TableCell>
+              <TableCell align="center">
+                <Tooltip title="Edit" placement="top"><IconButton color="primary" onClick={() => handleLink(`/user-permissions?id=${user.id}`)}><EditOutlined /></IconButton></Tooltip>
+                <IconButton color="error" size="small" onClick={() => handleDelete(user.id)}><DeleteOutlined /></IconButton>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
     </Auth>
   )
 }

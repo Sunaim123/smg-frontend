@@ -4,7 +4,7 @@ export const createOrder = async (token, payload) => {
   const { data: response } = await axios.post("/api/order", payload, {
     headers: {
       "Token": token,
-      "Content-Type": "application/json"
+      "Content-Type": "multipart/form-data"
     }
   })
 
@@ -15,7 +15,7 @@ export const updateOrder = async (token, payload) => {
   const { data: response } = await axios.put("/api/order", payload, {
     headers: {
       "Token": token,
-      "Content-Type": "application/json"
+      "Content-Type": "multipart/form-data"
     }
   })
 
@@ -92,13 +92,13 @@ export const trashOrder = async (token, payload) => {
   return response
 }
 
-export const updateOrderLineItem = async (token, payload) => {
-  const { data: response } = await axios.put("/api/order/lineitem", payload, {
+export const getCount = async (token) => {
+  const { data: response } = await axios.get("/api/orders/count", {
     headers: {
-      "Token": token,
-      "Content-Type": "application/json"
+      "Token": token
     }
   })
 
   return response
 }
+

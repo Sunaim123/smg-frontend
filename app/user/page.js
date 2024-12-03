@@ -55,7 +55,7 @@ export default function User() {
     } catch (error) {
       setToast({ type: "error", open: true, message: error.message })
     } finally {
-      setLoading(false)
+      setLoading(true)
     }
   }
 
@@ -87,8 +87,6 @@ export default function User() {
   }
 
   useEffect(() => {
-    if (userState.customer) router.replace("/products")
-
     let params
     if (userState.warehouseUser) params = { role: "warehouse" }
     if (userState.companyUser || userState.companyAdmin) params = { role: "company" }
@@ -118,7 +116,7 @@ export default function User() {
               <TextField name="name" label="Name" size="small" fullWidth required disabled={searchParams.has("id")} />
             </Grid>
             <Grid item xs={12}>
-              <TextField name="email" label="Email" size="small" fullWidth required disabled={searchParams.has("id")} type="email" />
+              <TextField name="email" label="Email" size="sma ll" fullWidth required disabled={searchParams.has("id")} type="email" />
             </Grid>
             <Grid item xs={12}>
               <TextField name="mobile" label="Mobile" size="small" fullWidth type="tel" />

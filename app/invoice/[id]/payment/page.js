@@ -79,7 +79,6 @@ export default function InvoicePayment({ params }) {
   }
 
   useEffect(() => {
-    if (userState.customer) router.replace("/products")
     if (!userState.warehouseUser) router.replace("/dashboard")
 
     if (params.id) getInvoice()

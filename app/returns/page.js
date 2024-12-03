@@ -1,5 +1,5 @@
 "use client"
-import { useRouter, useSearchParams, usePathname } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
 import { useSelector } from "react-redux"
 import { Autocomplete, Box, Grid, Button, Chip, Container, FormControl, IconButton, InputLabel, MenuItem, Select, Table, TableBody, TableCell, TableHead, TableRow, TextField, Tooltip, Typography, OutlinedInput } from "@mui/material"
@@ -23,17 +23,16 @@ export default function Returns() {
   const userState = useSelector(state => state.user)
   const router = useRouter()
   const searchParams = useSearchParams()
-  const pathname = usePathname()
 
   const [open, setOpen] = useState(false)
-  const [today, setToday] = useState(JSON.parse(searchParams.get("today")) || false)
-  const [trash, setTrash] = useState(searchParams.get("trash") || false)
+  const [today, setToday] = useState(false)
+  const [trash, setTrash] = useState(false)
   const [filters, setFilters] = useState("")
-  const [companyIds, setCompanyIds] = useState(typeof searchParams.get("company_id") === "string" ? searchParams.get("company_id").split(",").map(Number) : [])
+  const [companyIds, setCompanyIds] = useState([])
   const [companies, setCompanies] = useState([])
   const [count, setCount] = useState(0)
   const [returns, setReturns] = useState([])
-  const [status, setStatus] = useState(typeof searchParams.get("status") === "string" ? searchParams.get("status").split(",") : [])
+  const [status, setStatus] = useState([])
   const [active, setActive] = useState(1)
   const limit = 25
   const [toast, setToast] = useState({
@@ -42,46 +41,30 @@ export default function Returns() {
     message: null,
   })
 
-  const handleChange = (event) => {
-    const {
-      target: { value },
-    } = event
-
-    const selectedStatus = typeof value === "string" ? value.split(",") : value
-    setStatus(selectedStatus)
-
-    const params = new URLSearchParams(searchParams)
-    params.set('status', selectedStatus.join(','))
-    router.push(`${pathname}?${params.toString()}`)
-  }
-
   const handleCompanyChange = (event) => {
     const {
       target: { value },
     } = event
 
-    const selectedId = typeof value === "string" ? value.split(',').map(Number) : value
-    setCompanyIds(selectedId)
-
-    const params = new URLSearchParams(searchParams)
-    params.set('company_id', selectedId.join(','))
-    router.push(`${pathname}?${params.toString()}`)
+    setCompanyIds(
+      typeof value === "string" ? value.split(',').map(Number) : value
+    )
   }
 
-  const handleTrashSearch = () => {
-    setTrash(!trash)
+  const handleSearch = (e) => {
+    e.preventDefault()
 
-    const params = new URLSearchParams(searchParams)
-    params.set('trash', !trash)
-    router.push(`${pathname}?${params.toString()}`)
+    getReturns()
+    setOpen(false)
   }
 
-  const handleTodaySearch = () => {
-    setToday(!today)
-
-    const params = new URLSearchParams(searchParams)
-    params.set('today', !today)
-    router.push(`${pathname}?${params.toString()}`)
+  const handleChange = (event) => {
+    const {
+      target: { value },
+    } = event
+    setStatus(
+      typeof value === "string" ? value.split(",") : value,
+    )
   }
 
   const handleClear = () => {
@@ -91,7 +74,6 @@ export default function Returns() {
     setToday(false)
     setTrash(false)
     getReturns()
-    router.push(pathname)
   }
 
   const handleOpen = () => {
@@ -113,13 +95,6 @@ export default function Returns() {
     } catch (error) {
       setToast({ type: "error", open: true, message: error.message })
     }
-  }
-
-  const handleSearch = (e) => {
-    e.preventDefault()
-
-    getReturns()
-    setOpen(false)
   }
 
   const handleRestore = async (id) => {
@@ -182,11 +157,10 @@ export default function Returns() {
   useEffect(() => {
     getReturns()
   }, [status, filters.company_id, today, trash, active, companyIds])
-  
+
   useEffect(() => {
-    if (userState.customer) router.replace("/products")
-    if (userState.warehouseUser) getCompanies()
-  }, [])
+    if (searchParams.has("status")) setStatus([searchParams.get("status")])
+  }, [searchParams.get("status")])
 
   return (
     <Auth>
@@ -200,8 +174,8 @@ export default function Returns() {
             <Typography variant="h4" fontWeight={700}>Returns</Typography>
           </Grid>
           <Grid item xs={8} container justifyContent="flex-end" alignItems="center" gap={1}>
-            {userState.warehouseUser && <Chip variant={trash ? "filled" : "outlined"} label="Trash" color="error" size="medium" onClick={handleTrashSearch}></Chip>}
-            <Chip variant={today ? "filled" : "outlined"} label="Today" color="primary" size="medium" onClick={handleTodaySearch}></Chip>
+            {userState.warehouseUser && <Chip variant={trash ? "filled" : "outlined"} label="Trash" color="error" size="medium" onClick={() => setTrash(!trash)}></Chip>}
+            <Chip variant={today ? "filled" : "outlined"} label="Today" color="primary" size="medium" onClick={() => setToday(!today)}></Chip>
 
             <Grid item xs={2}>
               <FormControl fullWidth size="small">
@@ -222,6 +196,7 @@ export default function Returns() {
                     </Box>
                   )}
                 >
+                  <MenuItem value="Opened">Opened</MenuItem>
                   <MenuItem value="Received">Received</MenuItem>
                   <MenuItem value="Ship Requested">Ship Requested</MenuItem>
                   <MenuItem value="Shipped">Shipped</MenuItem>
@@ -262,7 +237,8 @@ export default function Returns() {
 
             <Button onClick={handleOpen}>Filters</Button>
             <Button color="error" onClick={handleClear}>Clear</Button>
-            {!userState.companyUser && <Button onClick={() => handleLink("/return")}>New</Button>}
+            {userState.warehouseUser && <Button onClick={() => handleLink("/return")}>New</Button>}
+            {userState.companyUser && <Button onClick={() => handleLink("/return/open")}>New</Button>}
           </Grid>
         </Grid>
       </Container>

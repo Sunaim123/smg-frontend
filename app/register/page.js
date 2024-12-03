@@ -3,15 +3,15 @@ import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
-import { Box, Button, Grid, TextField, ToggleButton, ToggleButtonGroup, Typography } from "@mui/material"
+import { Box, Button, Grid, TextField, Typography } from "@mui/material"
 
+import * as userApis from "@/app/apis/user"
 import Alert from "@/app/components/Alert"
 import Copyright from "@/app/components/Copyright"
-import * as userApis from "@/app/apis/user"
 import authImage from "@/public/auth.jpg"
-import logoImage from "@/public/brand.png"
+import logoImage from "@/public/smg-light-rounded.png"
 
-export default function Register() {
+export default function Page() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [passwordError, setPasswordError] = useState(false)
@@ -36,11 +36,10 @@ export default function Register() {
         return
       }
       const payload = {
-        type: "company",
         user: {
           name: e.target.name.value,
           email: e.target.email.value,
-          username: e.target.username.value,
+          username: e.target.email.value,
           password: e.target.password.value
         },
         company: {
@@ -93,28 +92,13 @@ export default function Register() {
         >
           <Image src={logoImage} alt="logo-image" style={{ width: 96, height: 96 }} />
           <Typography variant="h6" fontWeight={700} mb={3}>Register to Continue</Typography>
-          <ToggleButtonGroup
-            color="primary"
-            value="company"
-            disabled={loading}
-            exclusive
-            onChange={() => {
-              setLoading(true)
-              router.push("/customer-register")
-            }}
-            aria-label="Platform"
-            sx={{ marginBottom: 3 }}
-          >
-            <ToggleButton value="company">Company</ToggleButton>
-            <ToggleButton value="user">User</ToggleButton>
-          </ToggleButtonGroup>
 
           <form onSubmit={handleSubmit}>
             <Box display="flex" flexDirection="column" gap={1} mb={4}>
               <TextField type="text" name="name" label="Name" required autoFocus />
               <TextField type="text" name="company" label="Company Name" required />
               <TextField type="email" name="email" label="Email" required />
-              <TextField type="text" name="username" label="Username" required />
+              {/* <TextField type="text" name="username" label="Username" required /> */}
               <TextField type="password" name="password" label="Password" required
                 error={passwordError}
                 helperText={passwordError ? "Password must contain an uppercase, a lowercase, a number and a special character and should be minimum of 8 characters" : ""}
@@ -124,6 +108,7 @@ export default function Register() {
               <Button
                 type="submit"
                 fullWidth
+                size="large"
                 disabled={loading}
               >Register</Button>
 

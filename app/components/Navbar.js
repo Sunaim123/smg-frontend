@@ -3,12 +3,12 @@ import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
 import { useDispatch, useSelector } from "react-redux"
-import { AppBar, Avatar, Badge, Box, Button, Container, Grid, IconButton, Menu, MenuItem, Toolbar, Tooltip, Typography } from "@mui/material"
+import { AppBar, Avatar, Badge, Box, Button, Container, Divider, Grid, IconButton, Menu, MenuItem, Toolbar, Tooltip, Typography } from "@mui/material"
 import * as Icon from "@mui/icons-material"
 
 import CircularProgress from "@mui/material/CircularProgress"
 import Alert from "@/app/components/Alert"
-import brand from "@/public/brand-light.png"
+import brand from "@/public/smg-light-rounded.png"
 import * as userSlice from "@/app/store/user"
 import * as companyApis from "@/app/apis/company"
 import axios from "@/app/utilities/axios"
@@ -106,18 +106,26 @@ export default function Navbar() {
   }
 
   const pages = [
-    !userState.customer && { key: "dashboard", title: "Dashboard", link: "/dashboard", icon: <Icon.HomeOutlined /> },
-    !userState.customer && { key: "returns", title: "Returns", link: "/returns?status=Received", icon: <Icon.WarehouseOutlined /> },
-    !userState.customer && { key: "fbas", title: "FBA Shipments", link: "/fbas?status=Pending", icon: <Icon.LocalShippingOutlined /> },
+    { key: "dashboard", title: "Dashboard", link: "/dashboard", icon: <Icon.HomeOutlined /> },
+    { key: "returns", title: "Returns", link: userState.warehouseUser ? "/returns?status=Received" : "/returns?status=Opened", icon: <Icon.WarehouseOutlined /> },
+    { key: "fbas", title: "FBA Shipments", link: "/fbas?status=Pending", icon: <Icon.LocalShippingOutlined /> },
     { key: "products", title: "Inventory", link: "/products", icon: <Icon.Inventory2Outlined /> },
-    { key: "orders", title: userState.customer ? "Orders" : "Inventory Orders", link: userState.customer ? "/orders?status=Received&payment_status=Paid" : "/inventory-orders?status=Received&payment_status=Paid", icon: <Icon.CategoryOutlined /> }
+    { key: "orders", title: "Orders", link: "/products/orders", icon: <Icon.CategoryOutlined /> }
+  ]
+
+  const account = [
+    "Profile",
+    userState.companyUser && "Company",
+  ].filter(Boolean)
+
+  const user = [
+    "Users",
+    "Roles",
+    userState.permissions && userState.permissions["UPDATE_ROLE"] && "Permissions",
   ].filter(Boolean)
 
   const settings = [
-    userState.companyUser && company?.status === "onboard" && "Listings",
-    userState.companyUser && company?.status === "onboard" && "Orders",
-    !userState.customer && "Users",
-    !userState.customer && "Feedbacks",
+    "Feedbacks",
     userState.companyUser && "Settings",
     "Logout"
   ].filter(Boolean)
@@ -148,7 +156,7 @@ export default function Navbar() {
               textDecoration: "none",
             }}
           >
-            <Image src={brand} alt="brand" width={48} height={48} />
+            <Image src={brand} alt="brand" width={40} height={40} />
           </Typography>
           <Box sx={{ flexGrow: 1, display: { xs: "flex", md: "none" } }}>
             <IconButton
@@ -181,7 +189,7 @@ export default function Navbar() {
             >
               {pages.map((page) => (
                 <MenuItem key={page.key} onClick={() => handleLink(page.link)}>
-                  <Typography textAlign="center">{page.icon} {page.title}</Typography>
+                  <Typography textAlign="center">{page.title}</Typography>
                 </MenuItem>
               ))}
             </Menu>
@@ -203,7 +211,7 @@ export default function Navbar() {
               textDecoration: "none",
             }}
           >
-            SMG
+            <Image src={brand} alt="brand" width={40} height={40} />
           </Typography>
 
           <Box sx={{ flexGrow: 1, display: { xs: "none", md: "flex" } }}>
@@ -213,7 +221,7 @@ export default function Navbar() {
                 onClick={() => handleLink(page.link)}
                 sx={{ my: 2, color: "white", display: "flex", alignItems: "center", gap: 1 }}
               >
-                {page.icon} {page.title}
+                {page.title}
               </Button>
             ))}
 
@@ -223,7 +231,7 @@ export default function Navbar() {
                 onClick={() => handleLink("/invoices")}
                 sx={{ my: 2, color: "white", display: "flex", alignItems: "center", gap: 1 }}
               >
-                <Icon.ReceiptOutlined /> &nbsp; Invoices
+                Invoices
               </Button>}
 
             {userState.warehouseUser && userState.permissions && userState.permissions["READ_PAYMENT_LOGS"] && (
@@ -231,7 +239,7 @@ export default function Navbar() {
                 onClick={handleClick}
                 sx={{ my: 2, alignItems: "center" }}
               >
-                <Icon.AssessmentOutlined /> &nbsp; Reports
+                Reports
               </Button>)}
             <Menu
               id="fade-menu"
@@ -250,7 +258,11 @@ export default function Navbar() {
           <Box display="flex" alignItems="center" gap={1}>
             {userState.companyUser && company?.status !== "onboard" &&
               <Button onClick={() => setTermsModal(true)}>
-                {loading ? <CircularProgress color="inherit" size={20} /> : <Icon.StorefrontOutlined />} &nbsp; Become a seller
+                {loading ? <CircularProgress color="inherit" size={20} /> : <Icon.StorefrontOutlined />} &nbsp; Sell
+              </Button>}
+            {userState.companyUser && company?.status === "onboard" &&
+              <Button onClick={() => router.push("/seller/dashboard")}>
+                Seller
               </Button>}
 
             {!userState.warehouseUser &&
@@ -260,7 +272,7 @@ export default function Navbar() {
                 sx={{ my: 2, color: "white", display: "flex", alignItems: "center", gap: 1 }}
               >
                 <Icon.ShoppingCartOutlined />
-                {cart.length > 0 && <Badge> {cart.length} </Badge>}
+                {cart.length > 0 && <Badge>{cart.length}</Badge>}
               </Button>}
 
             <Box sx={{ flexGrow: 0 }}>
@@ -285,11 +297,37 @@ export default function Navbar() {
                 open={Boolean(anchorElUser)}
                 onClose={handleCloseUserMenu}
               >
-                {settings.map((item, index) => (
-                  <MenuItem key={index} onClick={() => handleMenuClick(item)}>
-                    {item}
-                  </MenuItem>
-                ))}
+                <Box sx={{ minWidth: "200px", textAlign: "center" }}>
+                  {account.map((item, index) => (
+                    <MenuItem key={index} onClick={() => handleMenuClick(item)}>
+                      {item}
+                    </MenuItem>
+                  ))}
+                  <Divider />
+                  {/* {userState.companyUser && company?.status === "onboard" && <>
+                    <MenuItem onClick={() => handleMenuClick("Listings")}>
+                      Listings
+                    </MenuItem>
+                    <MenuItem onClick={() => handleMenuClick("Listings/orders")}>
+                      My Orders
+                    </MenuItem>
+                    <MenuItem onClick={() => handleMenuClick("payouts")}>
+                      Payouts
+                    </MenuItem>
+                    <Divider />
+                  </>} */}
+                  {user.map((item, index) => (
+                    <MenuItem key={index} onClick={() => handleMenuClick(item)}>
+                      {item}
+                    </MenuItem>
+                  ))}
+                  <Divider />
+                  {settings.map((item, index) => (
+                    <MenuItem key={index} onClick={() => handleMenuClick(item)}>
+                      {item}
+                    </MenuItem>
+                  ))}
+                </Box>
               </Menu>
             </Box>
           </Box>

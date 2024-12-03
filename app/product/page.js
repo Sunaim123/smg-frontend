@@ -2,15 +2,16 @@
 import { useRouter, useSearchParams } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
 import { useSelector } from "react-redux"
-import { Autocomplete, Box, Button, Container, FormControl, Grid, TextField, Typography } from "@mui/material"
+import { Autocomplete, Box, Button, Container, FormControl, Grid, IconButton, TextField, Typography } from "@mui/material"
 
+import DeleteOutlined from "@mui/icons-material/DeleteOutlined"
 import Alert from "@/app/components/Alert"
 import Auth from "@/app/components/Auth"
 import Camera from "@/app/components/Camera"
 import Navbar from "@/app/components/Navbar"
 import * as constants from "@/app/utilities/constants"
 import * as companyApis from "@/app/apis/company"
-import * as inventoryApis from "@/app/apis/inventory"
+import * as productApis from "@/app/apis/product"
 
 export default function Product() {
   const userState = useSelector(state => state.user)
@@ -63,7 +64,6 @@ export default function Product() {
       setLoading(true)
       e.preventDefault()
 
-
       const form = new FormData()
       if (e.target.minimum_wholsale_quantity.value > 0 && e.target.wholsale_price.value < 1) throw new Error("Wholsale Price should be provided if Minimum Wholsale Quantity is present")
 
@@ -91,6 +91,7 @@ export default function Product() {
       form.append("sku", e.target.sku.value)
       form.append("company_id", company ? company.id : "")
       form.append("description", e.target.description.value)
+      form.append("short_description", e.target.short_description.value)
       form.append("manufacturer", e.target.manufacturer.value)
       form.append("brand", e.target.brand.value)
       form.append("retail_price", e.target.price.value || 0)
@@ -107,10 +108,10 @@ export default function Product() {
 
       if (searchParams.has("id")) {
         form.append("id", searchParams.get("id"))
-        const response = await inventoryApis.updateInventory(userState.token, form)
+        const response = await productApis.updateProduct(userState.token, form)
         if (!response.status) throw new Error(response.message)
       } else {
-        const response = await inventoryApis.createInventory(userState.token, form)
+        const response = await productApis.createProduct(userState.token, form)
         if (!response.status) throw new Error(response.message)
         e.target.reset()
       }
@@ -126,13 +127,13 @@ export default function Product() {
 
   const getProduct = async () => {
     try {
-      const response = await inventoryApis.getInventory(userState.token, searchParams.get("id"))
+      const response = await productApis.getProduct(userState.token, searchParams.get("id"))
       if (!response.status) throw new Error(response.message)
 
       if (response.product.company) setCompany({ label: response.product.company.name, id: response.product.company_id })
-      if (response.product.category) setCategory({ label: response.product.category.name })
       formRef.current.title.value = response.product.title
       formRef.current.description.value = response.product.description
+      formRef.current.short_description.value = response.product.short_description
       formRef.current.quantity.value = response.product.quantity
       formRef.current.price.value = response.product.retail_price
       formRef.current.cost.value = response.product.cost
@@ -176,7 +177,7 @@ export default function Product() {
   }
 
   useEffect(() => {
-    if (userState.permissions && !userState.permissions["CREATE_PRODUCT"]) router.replace("/dashboard")
+    if (!userState.warehouseUser) router.replace("/dashboard")
     getCompanies()
 
     if (searchParams.has("id")) getProduct()
@@ -196,13 +197,10 @@ export default function Product() {
               <Grid item xs={6}>
                 <TextField fullWidth type="text" label="Title" variant="outlined" name="title" size="small" />
               </Grid>
-              <Grid item xs={6}>
+              <Grid item xs={3}>
                 <TextField fullWidth type="text" label="SKU" name="sku" variant="outlined" size="small" />
               </Grid>
-              <Grid item xs={6}>
-                <TextField fullWidth type="text" label="Tracking Number" name="tracking_number" variant="outlined" size="small" inputProps={{ step: "0.01" }} required />
-              </Grid>
-              {userState.warehouseUser && <Grid item xs={6}>
+              <Grid item xs={3}>
                 <FormControl fullWidth size="small" variant="outlined" required>
                   <Autocomplete
                     disablePortal
@@ -215,9 +213,12 @@ export default function Product() {
                     isOptionEqualToValue={(option, value) => option.id === value.id}
                   />
                 </FormControl>
-              </Grid>}
+              </Grid>
               <Grid item xs={12}>
                 <TextField fullWidth type="text" label="Description" variant="outlined" name="description" size="small" multiline rows={4} required />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField fullWidth type="text" label="Short Description" variant="outlined" name="short_description" size="small" required />
               </Grid>
               <Grid item xs={3}>
                 <TextField fullWidth type="text" label="Brand" name="brand" variant="outlined" size="small" />
@@ -243,10 +244,14 @@ export default function Product() {
               <Grid item xs={3}>
                 <TextField fullWidth type="number" label="Shipping Price" name="shipping_price" variant="outlined" size="small" inputProps={{ step: "0.01" }} />
               </Grid>
+              <Grid item xs={6}>
+                <TextField fullWidth type="text" label="Tracking Number" name="tracking_number" variant="outlined" size="small" inputProps={{ step: "0.01" }} />
+              </Grid>
+              <Grid item xs={6} />
               {["thumbnail", "image1", "image2", "image3"].map((image) => {
                 return (
                   <Grid item xs={3} position="relative">
-                    <Camera name={image} alt={image} handleChange={handleChange} handleClick={handleClick} handleClear={handleClear} handleClearFile={handleClearFile} />
+                    <Camera name={image} alt={image} handleChange={handleChange} handleClick={handleClick} handleClear={handleClear} handleClearFile={handleClearFile} camera={true} />
                   </Grid>
                 )
               })}

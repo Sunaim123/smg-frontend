@@ -1,16 +1,19 @@
 "use client"
 import { useEffect, useState } from "react"
-import { useSelector } from "react-redux"
-import { Container, Grid, Typography } from "@mui/material"
+import { useSelector, useDispatch } from "react-redux"
+import { Button, Container, Grid, Typography } from "@mui/material"
 
 import Alert from "@/app/components/Alert"
 import Auth from "@/app/components/Auth"
 import Loading from "@/app/components/Loading"
 import Navbar from "@/app/components/Navbar"
-import * as inventoryApis from "@/app/apis/inventory"
+import axios from "@/app/utilities/axios"
+import * as cartSlice from "@/app/store/cart"
 
 export default function product({ params }) {
   const userState = useSelector(state => state.user)
+  const cartState = useSelector(state => state.cart)
+  const dispatch = useDispatch()
   const [product, setProduct] = useState(null)
   const [display, setDisplay] = useState("thumbnail_url")
   const [toast, setToast] = useState({
@@ -19,9 +22,13 @@ export default function product({ params }) {
     message: null,
   })
 
-  const getInventory = async () => {
+  const getProduct = async () => {
     try {
-      const response = await inventoryApis.getInventory(userState.token, params.id)
+      const { data: response } = await axios.get(`/api/product?id=${params.id}`, {
+        headers: {
+          "Token": userState.token
+        }
+      })
       if (!response.status) throw new Error(response.message)
 
       setProduct(response.product)
@@ -29,9 +36,22 @@ export default function product({ params }) {
       setToast({ type: "error", open: true, message: error.message })
     }
   }
- 
+
+  const handleCart = () => {
+    const index = cartState.findIndex((item) => item.id === product.id)
+
+    if (index === -1) {
+      dispatch(cartSlice.addToCart(product))
+      setToast({ type: "success", open: true, message: "Product added to the cart" })
+    } else {
+      if (product.quantity <= cartState[index].cart) return setToast({ type: "error", open: true, message: `We do not have more than ${product.quantity} units` })
+      dispatch(cartSlice.increment(index))
+      setToast({ type: "success", open: true, message: "Product updated in the cart" })
+    }
+  }
+
   useEffect(() => {
-    getInventory()
+    getProduct()
   }, [])
 
   if (!product)
@@ -71,6 +91,14 @@ export default function product({ params }) {
                   />
                 </Grid>
               ))}
+              <Grid item xs={12}>
+                <Button
+                  fullWidth
+                  onClick={handleCart}
+                >
+                  Add to cart
+                </Button>
+              </Grid>
             </Grid>
           </Grid>
           <Grid item xs={9}>
@@ -111,9 +139,14 @@ export default function product({ params }) {
                 <Typography variant="body2" fontWeight={800}>SHIPPING PRICE</Typography>
                 <Typography variant="body1">${product.shipping_price?.toFixed(2)}</Typography>
               </Grid>
-              <Grid item xs={6}>
-                <Typography variant="body2" fontWeight={800}>TRACKING #</Typography>
-                <Typography variant="body1">{product.tracking_number}</Typography>
+              {userState.warehouseUser &&
+                <Grid item xs={6}>
+                  <Typography variant="body2" fontWeight={800}>TRACKING #</Typography>
+                  <Typography variant="body1">{product.tracking_number}</Typography>
+                </Grid>}
+              <Grid item xs={12}>
+                <Typography variant="body2" fontWeight={800}>SHORT DESCRIPTION</Typography>
+                <Typography variant="body1">{product.short_description}</Typography>
               </Grid>
               <Grid item xs={12}>
                 <Typography variant="body2" fontWeight={800}>DESCRIPTION</Typography>

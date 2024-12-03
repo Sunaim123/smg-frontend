@@ -2,7 +2,7 @@
 import { useRouter, useSearchParams } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
 import { useSelector } from "react-redux"
-import { Autocomplete, Box, Button, Container, FormControl, Grid, IconButton, TextField, Typography, InputLabel, Select, MenuItem } from "@mui/material"
+import { Autocomplete, Box, Button, Container, FormControl, Grid, IconButton, TextField, Typography } from "@mui/material"
 import DeleteOutlined from "@mui/icons-material/DeleteOutlined"
 
 import Alert from "@/app/components/Alert"
@@ -41,17 +41,12 @@ export default function Return() {
   const [companies, setCompanies] = useState([])
   const [carrier, setCarrier] = useState("")
   const [company, setCompany] = useState(null)
-  const [type, setType] = useState('')
   const [loading, setLoading] = useState(false)
   const [toast, setToast] = useState({
     type: "success",
     open: false,
     message: null,
   })
-
-  const handleTypeChange = (event) => {
-    setType(event.target.value);
-  }
 
   const setImage = (type, file) => {
     formRef.current[type].src = URL.createObjectURL(file)
@@ -113,7 +108,7 @@ export default function Return() {
 
       form.append("description", e.target.description.value)
       form.append("rma_number", e.target.rma_number.value)
-      form.append("company", company ? company.id : "")
+      form.append("company_id", company ? company.id : "")
       form.append("quantity", e.target.quantity.value)
       form.append("carrier", carrier || "")
       form.append("tracking_number", e.target.tracking_number.value)
@@ -125,8 +120,7 @@ export default function Return() {
       form.append("width_unit", e.target.width_unit.value)
       form.append("height", e.target.height.value || "-")
       form.append("height_unit", e.target.height_unit.value)
-      if (userState.customer) form.append("return_status", "open")
-      if (userState.customer) form.append("type", type)
+      form.append("return_status", "received")
       if (e.target.image164) form.append("image1", e.target.image164.value)
       if (e.target.image264) form.append("image2", e.target.image264.value)
       if (e.target.image364) form.append("image3", e.target.image364.value)
@@ -158,7 +152,6 @@ export default function Return() {
 
       setCompany({ label: response.return.company.name, id: response.return.company_id })
       setCarrier(response.return.carrier)
-      setType(response.return.type)
       formRef.current.description.value = response.stream.description
       formRef.current.rma_number.value = response.return.rma_number
       formRef.current.quantity.value = response.return.quantity
@@ -216,7 +209,6 @@ export default function Return() {
   }
 
   useEffect(() => {
-    if (!userState.warehouseUser) router.replace("/dashboard")
     getCompanies()
 
     if (searchParams.get("id")) getReturn()
@@ -239,7 +231,7 @@ export default function Return() {
               <Grid item xs={12} md={6}>
                 <TextField fullWidth type="text" label="RMA #" variant="outlined" name="rma_number" size="small" />
               </Grid>
-              <Grid item xs={12} md={userState.customer? 3 : 6}>
+              <Grid item xs={12} md={6}>
                 <FormControl fullWidth size="small" variant="outlined" required>
                   <Autocomplete
                     disablePortal
@@ -253,111 +245,94 @@ export default function Return() {
                   />
                 </FormControl>
               </Grid>
-              {userState.customer &&
+              <Grid item xs={12} md={2}>
+                <TextField fullWidth type="text" label="Quantity" variant="outlined" name="quantity" size="small" />
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <Autocomplete
+                  disablePortal
+                  value={carrier}
+                  options={shipping}
+                  fullWidth
+                  size="small"
+                  renderInput={(params) => <TextField {...params} name="carrier" label="Shipping Carrier" />}
+                  onChange={(e, option) => setCarrier(option ? option.label : carrier)}
+                  onInputChange={(e, value) => setCarrier(value)}
+                  freeSolo
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField fullWidth label="Tracking #" name="tracking_number" variant="outlined" size="small" />
+              </Grid>
               <Grid item xs={12} md={3}>
-                <FormControl fullWidth>
-                  <InputLabel id="demo-simple-select-label" size="small">Type</InputLabel>
-                  <Select
-                    labelId="demo-simple-select-label"
-                    id="demo-simple-select"
-                    value={type}
-                    size="small"
-                    label="Type"
-                    onChange={handleTypeChange}
-                  >
-                    <MenuItem value="exchange">Exchange</MenuItem>
-                    <MenuItem value="refund">Refund</MenuItem>
-                  </Select>
-                </FormControl>
-            </Grid>}
-            <Grid item xs={12} md={2}>
-              <TextField fullWidth type="text" label="Quantity" variant="outlined" name="quantity" size="small" />
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <Autocomplete
-                disablePortal
-                value={carrier}
-                options={shipping}
-                fullWidth
-                size="small"
-                renderInput={(params) => <TextField {...params} name="carrier" label="Shipping Carrier" />}
-                onChange={(e, option) => setCarrier(option ? option.label : carrier)}
-                onInputChange={(e, value) => setCarrier(value)}
-                freeSolo
-              />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <TextField fullWidth label="Tracking #" name="tracking_number" variant="outlined" size="small" />
-            </Grid>
-            <Grid item xs={12} md={3}>
-              <Grid container spacing={1}>
-                <Grid item xs={8}>
-                  <TextField fullWidth type="text" label="Weight" name="weight" variant="outlined" size="small" />
-                </Grid>
-                <Grid item xs={4}>
-                  <SelectField name="weight_unit" defaultValue="lbs" options={weightOptions} />
+                <Grid container spacing={1}>
+                  <Grid item xs={8}>
+                    <TextField fullWidth type="text" label="Weight" name="weight" variant="outlined" size="small" />
+                  </Grid>
+                  <Grid item xs={4}>
+                    <SelectField name="weight_unit" defaultValue="lbs" options={weightOptions} />
+                  </Grid>
                 </Grid>
               </Grid>
-            </Grid>
-            <Grid item xs={12} md={3}>
-              <Grid container spacing={1}>
-                <Grid item xs={8}>
-                  <TextField fullWidth type="text" label="Length" name="length" variant="outlined" size="small" />
-                </Grid>
-                <Grid item xs={4}>
-                  <SelectField name="length_unit" defaultValue="inch" options={dimensionOptions} />
-                </Grid>
-              </Grid>
-            </Grid>
-            <Grid item xs={12} md={3}>
-              <Grid container spacing={1}>
-                <Grid item xs={8}>
-                  <TextField fullWidth size="small" type="text" label="Width" name="width" variant="outlined" />
-                </Grid>
-                <Grid item xs={4}>
-                  <SelectField name="width_unit" defaultValue="inch" options={dimensionOptions} />
+              <Grid item xs={12} md={3}>
+                <Grid container spacing={1}>
+                  <Grid item xs={8}>
+                    <TextField fullWidth type="text" label="Length" name="length" variant="outlined" size="small" />
+                  </Grid>
+                  <Grid item xs={4}>
+                    <SelectField name="length_unit" defaultValue="inch" options={dimensionOptions} />
+                  </Grid>
                 </Grid>
               </Grid>
-            </Grid>
-            <Grid item xs={12} md={3}>
-              <Grid container spacing={1}>
-                <Grid item xs={8}>
-                  <TextField fullWidth size="small" type="text" label="Height" name="height" variant="outlined" />
-                </Grid>
-                <Grid item xs={4}>
-                  <SelectField name="height_unit" defaultValue="inch" options={dimensionOptions} />
+              <Grid item xs={12} md={3}>
+                <Grid container spacing={1}>
+                  <Grid item xs={8}>
+                    <TextField fullWidth size="small" type="text" label="Width" name="width" variant="outlined" />
+                  </Grid>
+                  <Grid item xs={4}>
+                    <SelectField name="width_unit" defaultValue="inch" options={dimensionOptions} />
+                  </Grid>
                 </Grid>
               </Grid>
+              <Grid item xs={12} md={3}>
+                <Grid container spacing={1}>
+                  <Grid item xs={8}>
+                    <TextField fullWidth size="small" type="text" label="Height" name="height" variant="outlined" />
+                  </Grid>
+                  <Grid item xs={4}>
+                    <SelectField name="height_unit" defaultValue="inch" options={dimensionOptions} />
+                  </Grid>
+                </Grid>
+              </Grid>
+              <Grid item xs={6} md={3} position="relative">
+                <Camera name="image1" alt="image1" handleChange={handleChange} handleClick={handleClick} handleClear={handleClear} handleClearFile={handleClearFile} camera={true} />
+              </Grid>
+              <Grid item xs={6} md={3} position="relative">
+                <Camera name="image2" alt="image2" handleChange={handleChange} handleClick={handleClick} handleClear={handleClear} handleClearFile={handleClearFile} camera={true} />
+              </Grid>
+              <Grid item xs={6} md={3} position="relative">
+                <Camera name="image3" alt="image3" handleChange={handleChange} handleClick={handleClick} handleClear={handleClear} handleClearFile={handleClearFile} camera={true} />
+              </Grid>
+              <Grid item xs={6} md={3} position="relative">
+                <Camera name="image4" alt="image4" handleChange={handleChange} handleClick={handleClick} handleClear={handleClear} handleClearFile={handleClearFile} camera={true} />
+              </Grid>
+              <Grid item xs={12} md={9} />
+              <Grid item xs={12} md={3}>
+                <Button
+                  type="submit"
+                  variant="contained"
+                  color="primary"
+                  disableElevation
+                  fullWidth
+                  disabled={loading}
+                >
+                  Submit
+                </Button>
+              </Grid>
             </Grid>
-            <Grid item xs={6} md={3} position="relative">
-              <Camera name="image1" alt="image1" handleChange={handleChange} handleClick={handleClick} handleClear={handleClear} handleClearFile={handleClearFile} />
-            </Grid>
-            <Grid item xs={6} md={3} position="relative">
-              <Camera name="image2" alt="image2" handleChange={handleChange} handleClick={handleClick} handleClear={handleClear} handleClearFile={handleClearFile} />
-            </Grid>
-            <Grid item xs={6} md={3} position="relative">
-              <Camera name="image3" alt="image3" handleChange={handleChange} handleClick={handleClick} handleClear={handleClear} handleClearFile={handleClearFile} />
-            </Grid>
-            <Grid item xs={6} md={3} position="relative">
-              <Camera name="image4" alt="image4" handleChange={handleChange} handleClick={handleClick} handleClear={handleClear} handleClearFile={handleClearFile} />
-            </Grid>
-            <Grid item xs={12} md={9} />
-            <Grid item xs={12} md={3}>
-              <Button
-                type="submit"
-                variant="contained"
-                color="primary"
-                disableElevation
-                fullWidth
-                disabled={loading}
-              >
-                Submit
-              </Button>
-            </Grid>
-          </Grid>
-        </form>
-      </Box>
-    </Container>
-    </Auth >
+          </form>
+        </Box>
+      </Container>
+    </Auth>
   )
 }

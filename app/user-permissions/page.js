@@ -30,29 +30,29 @@ export default function Permissions() {
   let pagePermissions = {}
   if (userState.companyUser) {
     pagePermissions["User"] = ["CREATE USER", "UPDATE USER", "DELETE USER", "READ USER", "READ USERS"]
-    pagePermissions["Feedback"] = ["CREATE FEEDBACK", "UPDATE FEEDBACK", "DELETE FEEDBACK", "READ FEEDBACK", "READ FEEDBACKS"]
-    pagePermissions["Return"] = ["UPDATE RETURN", "DELETE RETURN", "READ RETURN", "READ RETURNS"]
-    pagePermissions["FBA"] = ["CREATE FBA", "UPDATE FBA", "DELETE FBA", "READ FBA", "READ FBAS"]
-    pagePermissions["Product"] = ["CREATE PRODUCT", "UPDATE PRODUCT", "READ PRODUCT", "READ PRODUCTS", "READ INVENTORY", "READ INVENTORIES"]
-    pagePermissions["Order"] = ["CREATE ORDER", "UPDATE ORDER", "DELETE ORDER", "READ ORDER", "READ ORDERS", "CREATE ORDER INVOICE", "READ ORDER INVOICE", "DELETE ORDER INVOICE", "CREATE INVENTORY ORDER", "UPDATE INVENTORY ORDER", "DELETE INVENTORY ORDER", "READ INVENTORY ORDER", "READ INVENTORY ORDERS"]
+      pagePermissions["Feedback"] = ["CREATE FEEDBACK", "UPDATE FEEDBACK", "DELETE FEEDBACK", "READ FEEDBACK", "READ FEEDBACKS"]
+      pagePermissions["Return"] = ["UPDATE RETURN", "DELETE RETURN", "READ RETURN", "READ RETURNS"]
+      pagePermissions["FBA"] = ["CREATE FBA", "UPDATE FBA", "DELETE FBA", "READ FBA", "READ FBAS"]
+      pagePermissions["Product"] = ["CREATE PRODUCT", "UPDATE PRODUCT", "DELETE PRODUCT", "READ PRODUCT", "READ PRODUCTS"]
+      pagePermissions["Order"] = ["CREATE ORDER", "UPDATE ORDER", "DELETE ORDER", "READ ORDER", "READ ORDERS", "CREATE ORDER INVOICE", "READ ORDER INVOICE", "DELETE ORDER INVOICE"]
   }
   if (userState.superUser) {
     pagePermissions["User"] = ["CREATE USER", "UPDATE USER", "DELETE USER", "READ USER", "READ USERS"]
-    pagePermissions["Address"] = ["CREATE ADDRESS", "UPDATE ADDRESS", "DELETE ADDRESS", "READ ADDRESS", "READ ADDRESSES"]
-    pagePermissions["Company"] = ["CREATE COMPANY", "UPDATE COMPANY", "DELETE COMPANY", "READ COMPANY", "READ COMPANIES"]
-    pagePermissions["Roles"] = ["UPDATE ROLE", "READ ROLE", "READ ROLES"]
-    pagePermissions["Warehouse"] = ["CREATE WAREHOUSE", "UPDATE WAREHOUSE", "DELETE WAREHOUSE", "READ WAREHOUSE", "READ WAREHOUSES"]
+      pagePermissions["Address"] = ["CREATE ADDRESS", "UPDATE ADDRESS", "DELETE ADDRESS", "READ ADDRESS", "READ ADDRESSES"]
+      pagePermissions["Company"] = ["CREATE COMPANY", "UPDATE COMPANY", "DELETE COMPANY", "READ COMPANY", "READ COMPANIES"]
+      pagePermissions["Roles"] = ["UPDATE ROLE", "READ ROLE", "READ ROLES"]
+      pagePermissions["Warehouse"] = ["CREATE WAREHOUSE", "UPDATE WAREHOUSE", "DELETE WAREHOUSE", "READ WAREHOUSE", "READ WAREHOUSES"]
   }
   if (userState.warehouseUser) {
     pagePermissions["Company"] = ["READ COMPANY", "READ COMPANIES"]
-    pagePermissions["User"] = ["CREATE USER", "UPDATE USER", "DELETE USER", "READ USER", "READ USERS"]
+      pagePermissions["User"] = ["CREATE USER", "UPDATE USER", "DELETE USER", "READ USER", "READ USERS"]
     pagePermissions["Feedback"] = ["UPDATE FEEDBACK", "DELETE FEEDBACK", "READ FEEDBACK", "READ FEEDBACKS"]
-    pagePermissions["Return"] = ["CREATE RETURN", "UPDATE RETURN", "DELETE RETURN", "READ RETURN", "READ RETURNS"]
-    pagePermissions["FBA"] = ["UPDATE FBA", "DELETE FBA", "READ FBA", "READ FBAS"]
-    pagePermissions["Product"] = ["CREATE PRODUCT", "UPDATE PRODUCT", "DELETE PRODUCT", "READ PRODUCT", "READ PRODUCTS", "CREATE INVENTORY", "UPDATE INVENTORY", "READ INVENTORY", "READ INVENTORIES"]
-    pagePermissions["Order"] = ["CREATE ORDER", "UPDATE ORDER", "DELETE ORDER", "READ ORDER", "READ ORDERS", "CREATE ORDER INVOICE", "READ ORDER INVOICE", "DELETE ORDER INVOICE", "CREATE INVENTORY ORDER", "UPDATE INVENTORY ORDER", "DELETE INVENTORY ORDER", "READ INVENTORY ORDER", "READ INVENTORY ORDERS", "CREATE INVENTORY ORDER INVOICE", "READ INVENTORY ORDER INVOICE", "DELETE INVENTORY ORDER INVOICE"]
-    pagePermissions["Reports"] = ["READ REPORTS"],
-    pagePermissions["Payment logs"] = ["READ PAYMENT LOGS"]
+      pagePermissions["Return"] = ["CREATE RETURN", "UPDATE RETURN", "DELETE RETURN", "READ RETURN", "READ RETURNS"]
+      pagePermissions["FBA"] = ["UPDATE FBA", "DELETE FBA", "READ FBA", "READ FBAS"]
+      pagePermissions["Product"] = ["CREATE PRODUCT", "UPDATE PRODUCT", "DELETE PRODUCT", "READ PRODUCT", "READ PRODUCTS"]
+    pagePermissions["Order"] = ["UPDATE ORDER", "DELETE ORDER", "READ ORDER", "READ ORDERS", "CREATE ORDER INVOICE", "READ ORDER INVOICE", "DELETE ORDER INVOICE"]
+      pagePermissions["Reports"] = ["READ REPORTS"],
+      pagePermissions["Payment logs"] = ["READ PAYMENT LOGS"]
     pagePermissions["Invoice"] = ["CREATE INVOICE", "UPDATE INVOICE", "DELETE INVOICE", "READ INVOICE", "READ INVOICES"]
   }
 
@@ -69,17 +69,6 @@ export default function Permissions() {
     setSelectedPermissions((prevPermissions) => ({
       ...prevPermissions,
       [permission]: !prevPermissions[permission],
-    }))
-  }
-
-  const handleCheckAll = (e, permission) => {
-    const all = permission.reduce((acc, permission) => {
-      acc[permission] = e.target.checked
-      return acc
-    }, {})
-
-    setSelectedPermissions((prevPermissions) => ({
-      ...prevPermissions, ...all
     }))
   }
 
@@ -211,16 +200,6 @@ export default function Permissions() {
                 Permissions for {selectedPage}
               </Typography>
               <Grid container spacing={2}>
-                <Grid item xs={6} md={4}>
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        checked={pagePermissions[selectedPage]?.every(permission => selectedPermissions[permission] === true)}
-                        onChange={(e) => handleCheckAll(e, pagePermissions[selectedPage])} />
-                    }
-                    label="ALL"
-                  />
-                </Grid>
                 {pagePermissions[selectedPage]?.map((permission) => (
                   <Grid item xs={6} md={4} key={permission}>
                     <FormControlLabel
@@ -235,7 +214,7 @@ export default function Permissions() {
                   </Grid>
                 ))}
               </Grid>
-              {userState.permissions && userState.permissions["UPDATE_USER"] && (
+              {userState.permissions && userState.permissions["UPDATE_ROLE"] && (
                 <Box mt={3}>
                   <Button
                     variant="contained"

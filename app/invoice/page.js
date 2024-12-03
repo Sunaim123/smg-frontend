@@ -154,7 +154,6 @@ export default function Invoice() {
   }
 
   useEffect(() => {
-    if (userState.customer) router.replace("/products")
     if (!userState.warehouseUser) router.replace("/dashboard")
     getCompanies()
     getProducts()

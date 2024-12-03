@@ -123,17 +123,6 @@ export default function Return({ params }) {
     }
   }
 
-  const updateStatus = async (status) => {
-    try {
-      const response = await returnApis.updateReturn(userState.token, { id: _return.id, return_status: status })
-      if (!response.status) throw new Error(response.message)
-
-      getReturn()
-    } catch (error) {
-      setToast({ type: "error", open: true, message: error.message })
-    }
-  }
-
   const handleClick = async (url) => {
     if (_return.return_status === "ship requested")
       try {
@@ -195,7 +184,6 @@ export default function Return({ params }) {
   }
 
   useEffect(() => {
-    if (userState.customer) router.replace("/products")
     getReturn()
     getAudits()
   }, [])
@@ -222,9 +210,12 @@ export default function Return({ params }) {
       </Box>
     )
 
+  const returnOpened = _return.return_status === "opened"
   const returnReceived = _return.return_status === "received" || _return?.quantity - _return?.quantity_shipped > 0
   const returnShipRequested = returnReceived || _return.return_status === "ship requested"
   const requestedCount = _return.return_services.filter(service => service.status === "requested").length
+
+  const receivedReturns = _return.return_status === "received" || _return.ship || _return.shipped
 
   return (
     <Auth>
@@ -241,7 +232,8 @@ export default function Return({ params }) {
       <Box display="flex" justifyContent="space-between" alignItems="center" my={3} px={2}>
         <Typography variant="h4" fontWeight={700}>Return</Typography>
         <Box display="flex" gap={1}>
-          {userState.companyUser && returnReceived && <Button onClick={() => router.push(`/return/ship?id=${_return?.id}&title=Request Ship`)}>Request Ship</Button>}
+          {userState.warehouseUser && returnOpened && <Button onClick={() => router.push(`/return/receive?id=${_return?.id}`)}>Mark as Received</Button>}
+          {userState.companyUser && returnReceived && !returnOpened && <Button onClick={() => router.push(`/return/ship?id=${_return?.id}&title=Request Ship`)}>Request Ship</Button>}
           {userState.companyUser && returnReceived && <Button onClick={() => router.push(`/return/service?id=${_return?.id}`)}>Add Service</Button>}
           {userState.warehouseUser && returnShipRequested && <Button onClick={() => handleClick(`/return/ship?id=${_return?.id}&title=Mark as Shipped`)} disabled={loading}>Mark as Shipped</Button>}
         </Box>
@@ -283,9 +275,14 @@ export default function Return({ params }) {
       </Grid>
 
       <Grid container spacing={2} px={2} mb={2}>
+        {_return.quantity_expected && _return.quantity_expected > 1 &&
+          <Grid item xs={3}>
+            <Typography variant="body2" fontWeight={800}>EXPECTED QUANTITY</Typography>
+            <Typography variant="body1">{_return.quantity_expected}</Typography>
+          </Grid>}
         {_return.quantity && <Grid item xs={3}>
-          <Typography variant="body2" fontWeight={800}>QUANTITY</Typography>
-          <Typography variant="body1">{_return.quantity}</Typography>
+          <Typography variant="body2" fontWeight={800}>QUANTITY RECEIVED</Typography>
+          <Typography variant="body1">{_return.quantity_expected}</Typography>
         </Grid>}
         {_return.quantity_shipped && <Grid item xs={3}>
           <Typography variant="body2" fontWeight={800}>QUANTITY SHIPPED</Typography>
@@ -299,9 +296,14 @@ export default function Return({ params }) {
 
       <Grid container spacing={2} px={2} mb={3}>
         <Grid item xs={3}>
-          <Typography variant="body2" fontWeight={800}>RECEIVED</Typography>
-          <Typography variant="body1">{constants.getFormattedDatetime(_return.received)}</Typography>
+          <Typography variant="body2" fontWeight={800}>OPENED</Typography>
+          <Typography variant="body1">{constants.getFormattedDatetime(_return.opened)}</Typography>
         </Grid>
+        {receivedReturns &&
+          <Grid item xs={3}>
+            <Typography variant="body2" fontWeight={800}>RECEIVED</Typography>
+            <Typography variant="body1">{constants.getFormattedDatetime(_return.received)}</Typography>
+          </Grid>}
         {_return.ship && <Grid item xs={3}>
           <Typography variant="body2" fontWeight={800}>SHIP REQUEST</Typography>
           <Typography variant="body1">{constants.getFormattedDatetime(_return.ship)}</Typography>
@@ -312,146 +314,143 @@ export default function Return({ params }) {
         </Grid>}
       </Grid>
 
-      {!userState.customer &&
-        <>
-          <Tabs value={value} onChange={handleChange} aria-label="basic tabs example">
-            <Tab label="Activity" {...a11yProps(0)} />
-            <Tab
-              label={
-                <Box display="flex" alignItems="center" gap={2}>
-                  <Typography variant="body2">Services</Typography>
-                  {!!requestedCount && <Badge badgeContent={requestedCount} color="error" />}
-                </Box>
-              }
-              {...a11yProps(1)}
-            />
-            <Tab label="Audit" {...a11yProps(2)} />
-          </Tabs>
-          <CustomTabPanel value={value} index={0}>
-            <Table>
-              <TableHead sx={{ backgroundColor: "#f3f4f6" }}>
-                <TableRow>
-                  {userState.warehouseUser && <TableCell>BY</TableCell>}
-                  <TableCell>Title</TableCell>
-                  <TableCell>Qty</TableCell>
-                  <TableCell>Carrier</TableCell>
-                  <TableCell>Tracking #</TableCell>
-                  <TableCell>Notes</TableCell>
-                  <TableCell>Created At</TableCell>
-                  <TableCell>Media</TableCell>
-                </TableRow>
-              </TableHead>
-              {_return.streams.map((stream, index) => (
-                <TableBody>
-                  <TableRow key={`return-activity-${stream.id}`}>
-                    {userState.warehouseUser && <TableCell>{stream.user.name}</TableCell>}
-                    <TableCell>{stream.title}</TableCell>
-                    <TableCell>{stream.quantity}</TableCell>
-                    <TableCell>{stream.carrier ? stream.carrier : ""}</TableCell>
-                    <TableCell>{stream.tracking_number ? stream.tracking_number : ""}</TableCell>
-                    <TableCell>{stream.description}</TableCell>
-                    <TableCell>{constants.getFormattedDatetime(stream.created_at)}</TableCell>
-                    <TableCell>
-                      <Box sx={{ display: "flex", gap: 1 }}>
-                        {["image1", "image2"].map((image) => stream[image] && <Image src={stream[image]} alt={image} width={40} height={40} onClick={() => handleModal(index, image)} style={{ border: "2px solid #eee", borderRadius: "4px" }} />)}
-                        {["image1_url", "image2_url", "image3_url", "image4_url"].map((image) => stream[image] && <Link href={stream[image]} target="_blank"><Image src={stream[image]} alt={stream[image]} width={40} height={40} style={{ border: "2px solid #eee", borderRadius: "4px" }} /></Link>)}
-                        {stream.label_url && <Button href={stream.label_url} target="_blank" startIcon={<OpenInNewOutlined />} variant="contained" size="small" disableElevation>Open Label</Button>}
-                      </Box>
-                    </TableCell>
-                  </TableRow>
-                </TableBody>
-              ))}
-            </Table>
-          </CustomTabPanel>
+      <Tabs value={value} onChange={handleChange} aria-label="basic tabs example">
+        <Tab label="Activity" {...a11yProps(0)} />
+        <Tab
+          label={
+            <Box display="flex" alignItems="center" gap={2}>
+              <Typography variant="body2">Services</Typography>
+              {!!requestedCount && <Badge badgeContent={requestedCount} color="error" />}
+            </Box>
+          }
+          {...a11yProps(1)}
+        />
+        <Tab label="Audit" {...a11yProps(2)} />
+      </Tabs>
+      <CustomTabPanel value={value} index={0}>
+        <Table>
+          <TableHead sx={{ backgroundColor: "#f3f4f6" }}>
+            <TableRow>
+              {userState.warehouseUser && <TableCell>BY</TableCell>}
+              <TableCell>Title</TableCell>
+              <TableCell>Qty</TableCell>
+              <TableCell>Carrier</TableCell>
+              <TableCell>Tracking #</TableCell>
+              <TableCell>Notes</TableCell>
+              <TableCell>Created At</TableCell>
+              <TableCell>Media</TableCell>
+            </TableRow>
+          </TableHead>
+          {_return.streams.map((stream, index) => (
+            <TableBody>
+              <TableRow key={`return-activity-${stream.id}`}>
+                {userState.warehouseUser && <TableCell>{stream.user.name}</TableCell>}
+                <TableCell>{stream.title}</TableCell>
+                <TableCell>{stream.quantity}</TableCell>
+                <TableCell>{stream.carrier ? stream.carrier : ""}</TableCell>
+                <TableCell>{stream.tracking_number ? stream.tracking_number : ""}</TableCell>
+                <TableCell>{stream.description}</TableCell>
+                <TableCell>{constants.getFormattedDatetime(stream.created_at)}</TableCell>
+                <TableCell>
+                  <Box sx={{ display: "flex", gap: 1 }}>
+                    {["image1", "image2"].map((image) => stream[image] && <Image src={stream[image]} alt={image} width={40} height={40} onClick={() => handleModal(index, image)} style={{ border: "2px solid #eee", borderRadius: "4px" }} />)}
+                    {["image1_url", "image2_url", "image3_url", "image4_url"].map((image) => stream[image] && <Link href={stream[image]} target="_blank"><Image src={stream[image]} alt={stream[image]} width={40} height={40} style={{ border: "2px solid #eee", borderRadius: "4px" }} /></Link>)}
+                    {stream.label_url && <Button href={stream.label_url} target="_blank" startIcon={<OpenInNewOutlined />} variant="contained" size="small" disableElevation>Open Label</Button>}
+                  </Box>
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          ))}
+        </Table>
+      </CustomTabPanel>
 
-          <CustomTabPanel value={value} index={1}>
-            <Table>
-              <TableHead sx={{ backgroundColor: "#f3f4f6" }}>
-                <TableRow>
-                  <TableCell>Type</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell>Payment Status</TableCell>
-                  <TableCell>Quantity</TableCell>
-                  <TableCell>Price</TableCell>
-                  <TableCell>Images</TableCell>
-                  <TableCell align="center">Action</TableCell>
-                </TableRow>
-              </TableHead>
-              {_return.return_services.map((service) => (
-                <TableBody>
-                  <TableRow key={`return-service-${service.id}`}>
-                    <TableCell sx={{ textTransform: "capitalize" }}>{service.type}</TableCell>
-                    <TableCell>{constants.returnServiceStatus[service.status]}</TableCell>
-                    <TableCell>{constants.paymentStatus[service.payment_status]} {service.payment_status !== "paid" && service.status !== "pending" && <Tooltip title="Validate Invoice"><IconButton onClick={() => handleValidate(service.invoice_id)}><RefreshOutlined color="primary" /></IconButton></Tooltip>}</TableCell>
-                    <TableCell>{service.quantity}</TableCell>
-                    <TableCell>{service.price === 0 ? `To be calculated` : `$${service.price.toFixed(2)}`}</TableCell>
-                    <TableCell>
-                      <Box display="flex" gap={1}>
-                        {["image1_url", "image2_url", "image3_url", "image4_url"].map((image) => (
-                          service[image] && (
-                            <Grid item key={image} xs={4}>
-                              <div
-                                style={{
-                                  display: "flex",
-                                  justifyContent: "center",
-                                  alignItems: "center",
-                                  border: "2px solid #f3f4f6",
-                                  borderRadius: "8px",
-                                  width: "40px",
-                                  height: "40px",
-                                  padding: "8px",
-                                  cursor: "pointer",
-                                }}
-                                onClick={() => handleModal(service[image])}
-                              >
-                                <img src={service[image]} alt={image} style={{ width: "40px", height: "40px", borderRadius: "8px" }} />
-                              </div>
-                            </Grid>
-                          )
-                        ))}
-                      </Box>
-                    </TableCell>
-                    <TableCell align="center" sx={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
-                      <IconButton color="primary" onClick={() => handleModalOpen(service)}><AssignmentOutlined /></IconButton>
-                      {userState.companyUser && service.payment_status !== "paid" && service.status !== "pending" && <Tooltip title="Pay Invoice"><IconButton href={service.invoice_url} target="_blank" size="small"><ArrowForwardOutlined color="success" /></IconButton></Tooltip>}
-                      {userState.warehouseUser && service.payment_status === "paid" && service.status === "requested" && <Tooltip title="Complete Service"><IconButton onClick={() => router.push(`/${service.type}?id=${_return.id}`)}><ArrowForwardOutlined color="success" /></IconButton></Tooltip>}
-                      {userState.warehouseUser && service.payment_status === "unpaid" && service.status === "pending" && <Tooltip title="Shipping charges"><IconButton onClick={() => handleShippingModalOpen(service.id)}><AddchartOutlined color="success" /></IconButton></Tooltip>}
-                    </TableCell>
-                  </TableRow>
-                </TableBody>
-              ))}
-            </Table>
-          </CustomTabPanel>
+      <CustomTabPanel value={value} index={1}>
+        <Table>
+          <TableHead sx={{ backgroundColor: "#f3f4f6" }}>
+            <TableRow>
+              <TableCell>Type</TableCell>
+              <TableCell>Status</TableCell>
+              <TableCell>Payment Status</TableCell>
+              <TableCell>Quantity</TableCell>
+              <TableCell>Price</TableCell>
+              <TableCell>Images</TableCell>
+              <TableCell align="center">Action</TableCell>
+            </TableRow>
+          </TableHead>
+          {_return.return_services.map((service) => (
+            <TableBody>
+              <TableRow key={`return-service-${service.id}`}>
+                <TableCell sx={{ textTransform: "capitalize" }}>{service.type}</TableCell>
+                <TableCell>{constants.returnServiceStatus[service.status]}</TableCell>
+                <TableCell>{constants.paymentStatus[service.payment_status]} {service.payment_status !== "paid" && service.status !== "pending" && <Tooltip title="Validate Invoice"><IconButton onClick={() => handleValidate(service.invoice_id)}><RefreshOutlined color="primary" /></IconButton></Tooltip>}</TableCell>
+                <TableCell>{service.quantity}</TableCell>
+                <TableCell>{service.price === 0 ? `To be calculated` : `$${service.price.toFixed(2)}`}</TableCell>
+                <TableCell>
+                  <Box display="flex" gap={1}>
+                    {["image1_url", "image2_url", "image3_url", "image4_url"].map((image) => (
+                      service[image] && (
+                        <Grid item key={image} xs={4}>
+                          <div
+                            style={{
+                              display: "flex",
+                              justifyContent: "center",
+                              alignItems: "center",
+                              border: "2px solid #f3f4f6",
+                              borderRadius: "8px",
+                              width: "40px",
+                              height: "40px",
+                              padding: "8px",
+                              cursor: "pointer",
+                            }}
+                            onClick={() => handleModal(service[image])}
+                          >
+                            <img src={service[image]} alt={image} style={{ width: "40px", height: "40px", borderRadius: "8px" }} />
+                          </div>
+                        </Grid>
+                      )
+                    ))}
+                  </Box>
+                </TableCell>
+                <TableCell align="center" sx={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+                  <IconButton color="primary" onClick={() => handleModalOpen(service)}><AssignmentOutlined /></IconButton>
+                  {userState.companyUser && service.payment_status !== "paid" && service.status !== "pending" && <Tooltip title="Pay Invoice"><IconButton href={service.invoice_url} target="_blank" size="small"><ArrowForwardOutlined color="success" /></IconButton></Tooltip>}
+                  {userState.warehouseUser && service.payment_status === "paid" && service.status === "requested" && <Tooltip title="Complete Service"><IconButton onClick={() => router.push(`/${service.type}?id=${_return.id}`)}><ArrowForwardOutlined color="success" /></IconButton></Tooltip>}
+                  {userState.warehouseUser && service.payment_status === "unpaid" && service.status === "pending" && <Tooltip title="Shipping charges"><IconButton onClick={() => handleShippingModalOpen(service.id)}><AddchartOutlined color="success" /></IconButton></Tooltip>}
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          ))}
+        </Table>
+      </CustomTabPanel>
 
-          <CustomTabPanel value={value} index={2}>
-            <Table>
-              <TableHead sx={{ backgroundColor: "#f3f4f6" }}>
-                <TableRow>
-                  <TableCell>Type</TableCell>
-                  <TableCell>Entity</TableCell>
-                  <TableCell>Message</TableCell>
-                  <TableCell>User</TableCell>
-                  <TableCell>Created</TableCell>
-                  <TableCell>Changes</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {audits.map((audit) => (
-                  <TableRow key={audit.id}>
-                    <TableCell sx={{ textTransform: "capitalize" }}>{audit.type}</TableCell>
-                    <TableCell>{audit.entity}</TableCell>
-                    <TableCell>{audit.message}</TableCell>
-                    <TableCell>{audit.user.name}</TableCell>
-                    <TableCell>{constants.getFormattedDatetime(audit.created_at)}</TableCell>
-                    <TableCell>
-                      <Button onClick={() => handleChangeModal(audit.id)}>View</Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CustomTabPanel>
-        </>}
+      <CustomTabPanel value={value} index={2}>
+        <Table>
+          <TableHead sx={{ backgroundColor: "#f3f4f6" }}>
+            <TableRow>
+              <TableCell>Type</TableCell>
+              <TableCell>Entity</TableCell>
+              <TableCell>Message</TableCell>
+              <TableCell>User</TableCell>
+              <TableCell>Created</TableCell>
+              <TableCell>Changes</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {audits.map((audit) => (
+              <TableRow key={audit.id}>
+                <TableCell sx={{ textTransform: "capitalize" }}>{audit.type}</TableCell>
+                <TableCell>{audit.entity}</TableCell>
+                <TableCell>{audit.message}</TableCell>
+                <TableCell>{audit.user.name}</TableCell>
+                <TableCell>{constants.getFormattedDatetime(audit.created_at)}</TableCell>
+                <TableCell>
+                  <Button onClick={() => handleChangeModal(audit.id)}>View</Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CustomTabPanel>
     </Auth>
   )
 }

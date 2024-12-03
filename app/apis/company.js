@@ -56,5 +56,6 @@ export const stripeOnboarding = async (token, payload) => {
       "Token": token
     }
   })
+  
   return response
 }

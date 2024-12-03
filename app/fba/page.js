@@ -173,8 +173,6 @@ export default function Fba() {
   }
 
   useEffect(() => {
-    if (userState.customer) router.replace("/products")
-
     if (searchParams.get("id")) getFba()
   }, [])
 

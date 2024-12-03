@@ -1,7 +1,6 @@
 "use client"
 import { useEffect, useRef, useState } from "react"
 import { useDispatch, useSelector } from "react-redux"
-import { useRouter } from "next/navigation"
 import { Button, Container, TextField, Typography } from "@mui/material"
 
 import Navbar from "@/app/components/Navbar"
@@ -10,7 +9,6 @@ import * as userSlice from "@/app/store/user"
 import axios from "@/app/utilities/axios"
 
 export default function Company() {
-  const router = useRouter()
   const dispatch = useDispatch()
   const userState = useSelector(state => state.user)
   const formRef = useRef(null)
@@ -39,13 +37,12 @@ export default function Company() {
       setToast({ type: "success", open: true, message: "company saved" })
       dispatch(userSlice.company(response.company))
     } catch (error) {
-      setToast({ type: "error", open: true, message: error.message })
+      alert(error.message)
     }
   }
 
   useEffect(() => {
-    if (userState.customer) router.replace("/products")
-    if (!userState.user) router.replace("/")
+    if (!userState.user) window.location.href = "/"
 
     formRef.current.name.value = userState.user.company?.name || ""
     formRef.current.email.value = userState.user.company?.email || ""

@@ -35,8 +35,6 @@ export default function Feedbacks() {
   }
 
   useEffect(() => {
-    if (userState.customer) router.replace("/products")
-
     getFeedbacks()
   }, [])
 

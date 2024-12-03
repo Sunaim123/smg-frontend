@@ -85,7 +85,6 @@ export default function Ship() {
   }
 
   useEffect(() => {
-    if (userState.customer) router.replace("/products")
     getReturn()
   }, [])
 

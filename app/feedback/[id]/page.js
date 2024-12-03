@@ -31,8 +31,6 @@ export default function Feedback({ params }) {
   }
 
   useEffect(() => {
-    if (userState.customer) router.replace("/products")
-
     if (params.id) getFeedback()
   }, [])
 

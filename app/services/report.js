@@ -49,12 +49,3 @@ export const getFbaCount = async (token, query) => {
   return response
 }
 
-export const stripePortal = async (token) => {
-  const { data: response } = await axios.get("/service/stripe/portal", {
-    headers: {
-      "Token": token
-    }
-  })
-  return response
-}
-

@@ -111,8 +111,6 @@ export default function Feedback() {
   }
 
   useEffect(() => {
-    if (userState.customer) router.replace("/products")
-
     if (searchParams.get("id")) getFeedback()
   }, [])
 

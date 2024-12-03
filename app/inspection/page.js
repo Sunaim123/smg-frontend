@@ -1,6 +1,6 @@
 "use client"
 import { useRouter, useSearchParams } from "next/navigation"
-import { useRef, useState, useEffect } from "react"
+import { useRef, useState } from "react"
 import { useSelector } from "react-redux"
 import { Button, Container, Grid, IconButton, TextField, Typography } from "@mui/material"
 import CloudUploadOutlined from "@mui/icons-material/CloudUploadOutlined"
@@ -85,10 +85,7 @@ export default function Inspection() {
       setLoading(false)
     }
   }
-  useEffect(() => {
-    if (userState.customer) router.replace("/products")
-  }, [])
-  
+
   return (
     <Auth>
       <Alert toast={toast} setToast={setToast} />

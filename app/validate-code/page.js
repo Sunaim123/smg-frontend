@@ -127,7 +127,7 @@ export default function ValidateCode() {
               disableElevation
               disabled={loading}
               sx={{ my: 1 }}
-            >Continue</Button>
+            >Login</Button>
 
             <Box textAlign="center" mb={4}>
               <Link href="/login" style={{ textDecoration: "none" }}>Back to Login</Link>

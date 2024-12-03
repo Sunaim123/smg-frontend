@@ -72,8 +72,6 @@ export default function Invoice({ params }) {
   }
 
   useEffect(() => {
-    if (userState.customer) router.replace("/products")
-
     getInvoice()
   }, [])
 

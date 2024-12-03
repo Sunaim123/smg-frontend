@@ -22,10 +22,8 @@ export default function ProductListView(props) {
             <TableCell>Title</TableCell>
             <TableCell>Tracking #</TableCell>
             <TableCell>Quantity</TableCell>
-            {userState.warehouseUser && <TableCell>Cost</TableCell>}
             <TableCell>Price</TableCell>
             <TableCell>Shipping Price</TableCell>
-            {userState.warehouseUser && <TableCell>Company</TableCell>}
             <TableCell align="center">Actions</TableCell>
           </TableRow>
         </TableHead>
@@ -41,14 +39,12 @@ export default function ProductListView(props) {
               <TableCell>{product.title}</TableCell>
               <TableCell>{product.tracking_number}</TableCell>
               <TableCell>{product.quantity}</TableCell>
-              {userState.warehouseUser && <TableCell>${product?.cost.toFixed(2)}</TableCell>}
               <TableCell>${product.retail_price.toFixed(2)}</TableCell>
               <TableCell>${(product.shipping_price)?.toFixed(2)}</TableCell>
-              {userState.warehouseUser && <TableCell>{product.company.name}</TableCell>}
               <TableCell align="center">
                 <IconButton color="primary" size="small" onClick={() => router.push(`product/${product.id}`)}><AssignmentOutlined /></IconButton>
-                <IconButton color="primary" size="small" onClick={() => props.onLink(`product?id=${product.id}`)}><EditOutlined /></IconButton>
-                <IconButton color="error" size="small" onClick={() => props.onDelete(product.id)}><DeleteOutlined /></IconButton>
+                {userState.warehouseUser && <IconButton color="primary" size="small" onClick={() => props.onLink(`product?id=${product.id}`)}><EditOutlined /></IconButton>}
+                {userState.warehouseUser && <IconButton color="error" size="small" onClick={() => props.onDelete(product.id)}><DeleteOutlined /></IconButton>}
               </TableCell>
             </TableRow>
           ))}

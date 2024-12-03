@@ -55,12 +55,12 @@ export default function Role() {
       formRef.current.name.value = response.role.name
 
     } catch (error) {
+      console.log(error);
       setToast({ type: "error", open: true, message: error.message })
     }
   }
 
   useEffect(() => {
-    if (userState.customer) router.replace("/products")
     if (searchParams.has("id")) getRole()
   }, [])
 

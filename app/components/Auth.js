@@ -4,13 +4,23 @@ import { useEffect, useState } from "react"
 import { useSelector } from "react-redux"
 import Loading from "@/app/components/Loading"
 import axios from "@/app/utilities/axios"
-import moment from "moment"
-import * as serviceApis from "@/app/services/report"
+import * as stripeService from "@/app/services/stripe"
 
 export default function Auth(props) {
   const userState = useSelector(state => state.user)
   const router = useRouter()
   const [loading, setLoading] = useState(true)
+
+  const getBillingPortal = async () => {
+    try {
+      const response = await stripeService.getBillingPortal(userState.token)
+      if (!response.status) throw new Error(response.message)
+
+      router.replace(response.url)
+    } catch (error) {
+      router.replace("/login")
+    }
+  }
 
   const validateSession = async () => {
     try {
@@ -25,21 +35,17 @@ export default function Auth(props) {
     }
   }
 
-  const getStripePostal = async () => {
-    try {
-      const response = await serviceApis.stripePortal(userState.token)
-      if (!response.status) throw new Error(response.message)
-
-      window.location.href = response.url
-    } catch (error) {
-      alert(error.message)
-    }
-  }
-
   useEffect(() => {
     if (!userState.user) return router.replace("/login")
-    else if (userState.user.company && userState.user.company.payment_status !== "paid" && !userState.user.company.subscription_id) router.replace("/payment")
-    else if (userState.user.company && userState.user.company.payment_status === "paid" && userState.user.company.subscription_id && userState.user.company.end_date < moment().format("YYYY-MM-DD")) return getStripePostal()
+    if (userState.companyUser) {
+      if (!userState.user.company) return router.replace("/login")
+
+      const hasSubscription = userState.user.company.subscription_id
+      const isUnpaid = userState.user.company.payment_status !== "paid"
+
+      if (hasSubscription && isUnpaid) getBillingPortal()
+      if (!hasSubscription && isUnpaid) return router.replace("/payment")
+    }
 
     validateSession()
   }, [])

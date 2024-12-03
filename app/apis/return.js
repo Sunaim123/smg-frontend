@@ -174,3 +174,14 @@ export const updateReturnService = async (token, payload) => {
 
   return response
 }
+
+export const returnReceived = async (token, payload) => {
+  const { data: response } = await axios.post("/api/return-received", payload, {
+    headers: {
+      "Token": token,
+      "Content-Type": "multipart/form-data"
+    }
+  })
+
+  return response
+}
